@@ -7,6 +7,7 @@ import {
     DbtProjectConfig,
     Explore,
     ExploreError,
+    generateSlug,
     isExploreError,
     NotExistsError,
     OrganizationProject,
@@ -265,10 +266,10 @@ export class ProjectModel {
             }
 
             // Make sure the project to copy exists and is owned by the same organization
-            const copiedProjects = data.copiedFromProjectUuid
+            const copiedProjects = data.upstreamProjectUuid
                 ? await trx('projects')
                       .where('organization_id', orgs[0].organization_id)
-                      .andWhere('project_uuid', data.copiedFromProjectUuid)
+                      .andWhere('project_uuid', data.upstreamProjectUuid)
                 : [];
             const [project] = await trx('projects')
                 .insert({
@@ -295,6 +296,7 @@ export class ProjectModel {
                 project_id: project.project_id,
                 name: 'Shared',
                 is_private: false,
+                slug: generateSlug('Shared'),
             });
 
             return project.project_uuid;

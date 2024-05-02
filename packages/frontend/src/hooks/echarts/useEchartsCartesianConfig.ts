@@ -19,6 +19,7 @@ import {
     isTableCalculation,
     isTimeInterval,
     MetricType,
+    TableCalculationType,
     timeFrameConfigs,
     TimeFrames,
     type ApiQueryResults,
@@ -78,8 +79,10 @@ const getLabelFromField = (fields: ItemsMap, key: string | undefined) => {
 
 const getAxisTypeFromField = (item?: ItemsMap[string]): string => {
     if (item && isCustomDimension(item)) return 'category';
-    if (item && isField(item)) {
+    if (item && isTableCalculation(item) && !item.type) return 'value';
+    if (item && (isField(item) || isTableCalculation(item))) {
         switch (item.type) {
+            case TableCalculationType.NUMBER:
             case DimensionType.NUMBER:
             case MetricType.NUMBER:
             case MetricType.PERCENTILE:
@@ -96,6 +99,8 @@ const getAxisTypeFromField = (item?: ItemsMap[string]): string => {
             case MetricType.TIMESTAMP:
             case DimensionType.DATE:
             case MetricType.DATE:
+            case TableCalculationType.DATE:
+            case TableCalculationType.TIMESTAMP:
                 return 'time';
             default: {
                 return 'category';
@@ -899,7 +904,11 @@ const getEchartAxes = ({
                     },
                 },
             };
-        } else if (axisItem !== undefined && isTableCalculation(axisItem)) {
+        } else if (
+            axisItem !== undefined &&
+            isTableCalculation(axisItem) &&
+            axisItem.type === undefined
+        ) {
             axisConfig.axisLabel = {
                 formatter: (value: any) => {
                     return formatItemValue(axisItem, value);
@@ -1073,13 +1082,21 @@ const getEchartAxes = ({
                             getItemLabelWithoutTableName(xAxisItem)
                           : undefined),
                 min:
-                    xAxisConfiguration?.[0]?.min ||
-                    referenceLineMinX ||
-                    maybeGetAxisDefaultMinValue(allowFirstAxisDefaultRange),
+                    bottomAxisType === 'value'
+                        ? xAxisConfiguration?.[0]?.min ||
+                          referenceLineMinX ||
+                          maybeGetAxisDefaultMinValue(
+                              allowFirstAxisDefaultRange,
+                          )
+                        : undefined,
                 max:
-                    xAxisConfiguration?.[0]?.max ||
-                    referenceLineMaxX ||
-                    maybeGetAxisDefaultMaxValue(allowFirstAxisDefaultRange),
+                    bottomAxisType === 'value'
+                        ? xAxisConfiguration?.[0]?.max ||
+                          referenceLineMaxX ||
+                          maybeGetAxisDefaultMaxValue(
+                              allowFirstAxisDefaultRange,
+                          )
+                        : undefined,
                 nameLocation: 'center',
                 nameTextStyle: {
                     fontWeight: 'bold',
@@ -1113,11 +1130,19 @@ const getEchartAxes = ({
                       })
                     : undefined,
                 min:
-                    xAxisConfiguration?.[1]?.min ||
-                    maybeGetAxisDefaultMinValue(allowSecondAxisDefaultRange),
+                    topAxisType === 'value'
+                        ? xAxisConfiguration?.[1]?.min ||
+                          maybeGetAxisDefaultMinValue(
+                              allowSecondAxisDefaultRange,
+                          )
+                        : undefined,
                 max:
-                    xAxisConfiguration?.[1]?.max ||
-                    maybeGetAxisDefaultMaxValue(allowSecondAxisDefaultRange),
+                    topAxisType === 'value'
+                        ? xAxisConfiguration?.[1]?.max ||
+                          maybeGetAxisDefaultMaxValue(
+                              allowSecondAxisDefaultRange,
+                          )
+                        : undefined,
                 nameLocation: 'center',
                 ...getAxisFormatter({
                     axisItem: topAxisXField,
@@ -1151,13 +1176,21 @@ const getEchartAxes = ({
                           series: validCartesianConfig.eChartsConfig.series,
                       }),
                 min:
-                    yAxisConfiguration?.[0]?.min ||
-                    referenceLineMinLeftY ||
-                    maybeGetAxisDefaultMinValue(allowFirstAxisDefaultRange),
+                    leftAxisType === 'value'
+                        ? yAxisConfiguration?.[0]?.min ||
+                          referenceLineMinLeftY ||
+                          maybeGetAxisDefaultMinValue(
+                              allowFirstAxisDefaultRange,
+                          )
+                        : undefined,
                 max:
-                    yAxisConfiguration?.[0]?.max ||
-                    referenceLineMaxLeftY ||
-                    maybeGetAxisDefaultMaxValue(allowFirstAxisDefaultRange),
+                    leftAxisType === 'value'
+                        ? yAxisConfiguration?.[0]?.max ||
+                          referenceLineMaxLeftY ||
+                          maybeGetAxisDefaultMaxValue(
+                              allowFirstAxisDefaultRange,
+                          )
+                        : undefined,
                 nameTextStyle: {
                     fontWeight: 'bold',
                     align: 'center',
@@ -1188,13 +1221,21 @@ const getEchartAxes = ({
                           series: validCartesianConfig.eChartsConfig.series,
                       }),
                 min:
-                    yAxisConfiguration?.[1]?.min ||
-                    referenceLineMinRightY ||
-                    maybeGetAxisDefaultMinValue(allowSecondAxisDefaultRange),
+                    rightAxisType === 'value'
+                        ? yAxisConfiguration?.[1]?.min ||
+                          referenceLineMinRightY ||
+                          maybeGetAxisDefaultMinValue(
+                              allowSecondAxisDefaultRange,
+                          )
+                        : undefined,
                 max:
-                    yAxisConfiguration?.[1]?.max ||
-                    referenceLineMaxRightY ||
-                    maybeGetAxisDefaultMaxValue(allowSecondAxisDefaultRange),
+                    rightAxisType === 'value'
+                        ? yAxisConfiguration?.[1]?.max ||
+                          referenceLineMaxRightY ||
+                          maybeGetAxisDefaultMaxValue(
+                              allowSecondAxisDefaultRange,
+                          )
+                        : undefined,
                 nameTextStyle: {
                     fontWeight: 'bold',
                     align: 'center',
@@ -1451,7 +1492,10 @@ const useEchartsCartesianConfig = (
                 : getResultValueArray(rows, true);
         try {
             if (!itemsMap) return results;
-            const xFieldId = validCartesianConfig?.layout?.xField;
+            const xFieldId = validCartesianConfig?.layout.flipAxes
+                ? validCartesianConfig?.layout?.yField?.[0]
+                : validCartesianConfig?.layout?.xField;
+
             if (xFieldId === undefined) return results;
             const { min, max } = axes.xAxis[0];
 
@@ -1468,12 +1512,8 @@ const useEchartsCartesianConfig = (
                           min === undefined ||
                           typeof min !== 'string' ||
                           value > min;
-                      const isLessThan =
-                          max === undefined ||
-                          typeof max !== 'string' ||
-                          value < max;
 
-                      return isGreaterThan && isLessThan;
+                      return isGreaterThan;
                   })
                 : results;
 
@@ -1535,11 +1575,13 @@ const useEchartsCartesianConfig = (
         }
     }, [
         validCartesianConfig?.layout?.xField,
+        validCartesianConfig?.layout.flipAxes,
+        validCartesianConfig?.layout?.yField,
         validCartesianConfig?.eChartsConfig?.series,
         rows,
         itemsMap,
+        axes,
         resultsData?.metricQuery.sorts,
-        axes.xAxis,
     ]);
 
     const tooltip = useMemo<TooltipOption>(

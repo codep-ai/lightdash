@@ -1,6 +1,5 @@
 import {
     assertUnreachable,
-    Comment,
     CreateDashboard,
     DashboardBasicDetails,
     DashboardChartTile,
@@ -65,7 +64,7 @@ import Transaction = Knex.Transaction;
 
 export type GetDashboardQuery = Pick<
     DashboardTable['base'],
-    'dashboard_id' | 'dashboard_uuid' | 'name' | 'description'
+    'dashboard_id' | 'dashboard_uuid' | 'name' | 'description' | 'slug'
 > &
     Pick<DashboardVersionTable['base'], 'dashboard_version_id' | 'created_at'> &
     Pick<ProjectTable['base'], 'project_uuid'> &
@@ -459,6 +458,7 @@ export class DashboardModel {
                 `${DashboardsTableName}.dashboard_uuid`,
                 `${DashboardsTableName}.name`,
                 `${DashboardsTableName}.description`,
+                `${DashboardsTableName}.slug`,
                 `${DashboardVersionsTableName}.dashboard_version_id`,
                 `${DashboardVersionsTableName}.created_at`,
                 `${UserTableName}.user_uuid`,
@@ -709,12 +709,13 @@ export class DashboardModel {
                 firstName: dashboard.first_name,
                 lastName: dashboard.last_name,
             },
+            slug: dashboard.slug,
         };
     }
 
     async create(
         spaceUuid: string,
-        dashboard: CreateDashboard,
+        dashboard: CreateDashboard & { slug: string },
         user: Pick<SessionUser, 'userUuid'>,
         projectUuid: string,
     ): Promise<DashboardDAO> {
@@ -726,16 +727,19 @@ export class DashboardModel {
             if (!space) {
                 throw new NotFoundError('Space not found');
             }
+
             const [newDashboard] = await trx(DashboardsTableName)
                 .insert({
                     name: dashboard.name,
                     description: dashboard.description,
                     space_id: space.space_id,
+                    slug: dashboard.slug,
                 })
                 .returning(['dashboard_id', 'dashboard_uuid']);
 
             await DashboardModel.createVersion(trx, newDashboard.dashboard_id, {
                 ...dashboard,
+                tabs: dashboard.tabs || [],
                 updatedByUser: user,
             });
 
@@ -750,10 +754,12 @@ export class DashboardModel {
     ): Promise<DashboardDAO> {
         const withSpaceId = dashboard.spaceUuid
             ? {
-                  space_id: await SpaceModel.getSpaceId(
-                      this.database,
-                      dashboard.spaceUuid,
-                  ),
+                  space_id: (
+                      await SpaceModel.getSpaceIdAndName(
+                          this.database,
+                          dashboard.spaceUuid,
+                      )
+                  )?.spaceId,
               }
             : {};
         await this.database(DashboardsTableName)
@@ -775,10 +781,12 @@ export class DashboardModel {
                 dashboards.map(async (dashboard) => {
                     const withSpaceId = dashboard.spaceUuid
                         ? {
-                              space_id: await SpaceModel.getSpaceId(
-                                  this.database,
-                                  dashboard.spaceUuid,
-                              ),
+                              space_id: (
+                                  await SpaceModel.getSpaceIdAndName(
+                                      this.database,
+                                      dashboard.spaceUuid,
+                                  )
+                              )?.spaceId,
                           }
                         : {};
                     await trx(DashboardsTableName)
@@ -821,6 +829,7 @@ export class DashboardModel {
         await this.database.transaction(async (trx) => {
             await DashboardModel.createVersion(trx, dashboard.dashboard_id, {
                 ...version,
+                tabs: version.tabs || [],
                 updatedByUser: user,
             });
         });
