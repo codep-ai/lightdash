@@ -9,7 +9,6 @@ import {
     dashboardFilters,
     dashboardFilterWithSameTargetAndOperator,
     dashboardFilterWithSameTargetButDifferentOperator,
-    expectedChartWithMergedDashboardFilters,
     expectedChartWithOverrideDashboardFilters,
     expectedChartWithOverrideDashboardORFilters,
     metricQueryWithAndFilters,
@@ -21,19 +20,10 @@ jest.mock('uuid', () => ({
 }));
 
 describe('addDashboardFiltersToMetricQuery', () => {
-    test('should merge the chart filters with dashboard filters', async () => {
-        const result = addDashboardFiltersToMetricQuery(
-            metricQueryWithAndFilters,
-            dashboardFilters,
-            false,
-        );
-        expect(result).toEqual(expectedChartWithMergedDashboardFilters);
-    });
     test('should override the chart AND filter group with dashboard filters', async () => {
         const result = addDashboardFiltersToMetricQuery(
             metricQueryWithAndFilters,
             dashboardFilters,
-            true,
         );
         expect(result).toEqual(expectedChartWithOverrideDashboardFilters);
     });
@@ -41,7 +31,6 @@ describe('addDashboardFiltersToMetricQuery', () => {
         const result = addDashboardFiltersToMetricQuery(
             metricQueryWithOrFilters,
             dashboardFilters,
-            true,
         );
         expect(result).toEqual(expectedChartWithOverrideDashboardORFilters);
     });
@@ -99,7 +88,7 @@ describe('overrideChartFilter', () => {
         });
     });
 
-    test('should not override the chart group filter when operator is different', async () => {
+    test('should override the chart group filter when operator is different', async () => {
         const result = overrideChartFilter(
             chartAndFilterGroup,
             dashboardFilterWithSameTargetButDifferentOperator,
@@ -108,11 +97,11 @@ describe('overrideChartFilter', () => {
             id: 'fillter-group-1',
             and: [
                 {
-                    id: '1',
+                    id: '5',
                     target: { fieldId: 'field-1' },
-                    values: ['1'],
+                    values: ['1', '2', '3'],
                     disabled: false,
-                    operator: ConditionalOperator.EQUALS,
+                    operator: ConditionalOperator.NOT_EQUALS,
                 },
                 {
                     id: '2',

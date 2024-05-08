@@ -16,7 +16,7 @@ import * as fsPromise from 'fs/promises';
 import { nanoid as useNanoid } from 'nanoid';
 import fetch from 'node-fetch';
 import { PDFDocument } from 'pdf-lib';
-import puppeteer from 'puppeteer';
+import puppeteer, { type Browser, type Page } from 'puppeteer';
 import { S3Client } from '../../clients/Aws/s3';
 import { LightdashConfig } from '../../config/parseConfig';
 import { DashboardModel } from '../../models/DashboardModel/DashboardModel';
@@ -388,21 +388,11 @@ export class UnfurlService extends BaseService {
         const startTime = Date.now();
         let hasError = false;
 
-        const isPuppeteerSetViewportDynamicallyEnabled =
-            await isFeatureFlagEnabled(
-                FeatureFlags.PuppeteerSetViewportDynamically,
-                { userUuid, organizationUuid },
-            );
-        const isPuppeteerScrollElementIntoViewEnabled =
-            await isFeatureFlagEnabled(
-                FeatureFlags.PuppeteerScrollElementIntoView,
-                { userUuid, organizationUuid },
-            );
-
         return tracer.startActiveSpan(
             'UnfurlService.saveScreenshot',
             async (span) => {
-                let browser;
+                let browser: Browser | undefined;
+                let page: Page | undefined;
 
                 try {
                     const browserWSEndpoint = `ws://${
@@ -412,7 +402,7 @@ export class UnfurlService extends BaseService {
                         browserWSEndpoint,
                     });
 
-                    const page = await browser.newPage();
+                    page = await browser.newPage();
                     const parsedUrl = new URL(url);
 
                     const cookieMatch = cookie.match(/connect\.sid=([^;]+)/); // Extract cookie value
@@ -529,12 +519,7 @@ export class UnfurlService extends BaseService {
 
                     if (lightdashPage === LightdashPage.EXPLORE) {
                         finalSelector = `[data-testid="visualization"]`;
-                    }
-
-                    if (
-                        isPuppeteerSetViewportDynamicallyEnabled &&
-                        lightdashPage === LightdashPage.DASHBOARD
-                    ) {
+                    } else if (lightdashPage === LightdashPage.DASHBOARD) {
                         finalSelector = '.react-grid-layout';
                     }
 
@@ -542,10 +527,7 @@ export class UnfurlService extends BaseService {
                         timeout: 60000,
                     });
 
-                    if (
-                        isPuppeteerSetViewportDynamicallyEnabled &&
-                        lightdashPage === LightdashPage.DASHBOARD
-                    ) {
+                    if (lightdashPage === LightdashPage.DASHBOARD) {
                         const fullPage = await page.$('.react-grid-layout');
                         const fullPageSize = await fullPage?.boundingBox();
                         await page.setViewport({
@@ -600,8 +582,7 @@ export class UnfurlService extends BaseService {
                     }
                     const imageBuffer = await element.screenshot({
                         path,
-                        ...(isPuppeteerScrollElementIntoViewEnabled &&
-                        lightdashPage === LightdashPage.DASHBOARD
+                        ...(lightdashPage === LightdashPage.DASHBOARD
                             ? {
                                   scrollIntoView: true,
                               }
@@ -619,8 +600,6 @@ export class UnfurlService extends BaseService {
                         organization_uuid: organizationUuid || 'undefined',
                         uuid: resourceUuid ?? 'undefined',
                         title: resourceName ?? 'undefined',
-                        is_viewport_dynamically_enabled: `${isPuppeteerSetViewportDynamicallyEnabled}`,
-                        is_scroll_into_view_enabled: `${isPuppeteerScrollElementIntoViewEnabled}`,
                         custom_width: `${gridWidth}`,
                     });
                     span.setStatus({
@@ -632,7 +611,8 @@ export class UnfurlService extends BaseService {
                     );
                     throw e;
                 } finally {
-                    if (browser) await browser.close();
+                    if (page) await page.close();
+                    if (browser) await browser.disconnect();
 
                     span.end();
 
