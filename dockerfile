@@ -157,8 +157,11 @@ COPY lightdash.yml /usr/app/lightdash.yml
 ENV LIGHTDASH_CONFIG_FILE /usr/app/lightdash.yml
 
 # Run backend
-COPY ./docker/prod-entrypoint.sh /usr/bin/prod-entrypoint.sh
 
 EXPOSE 8080
-ENTRYPOINT ["/usr/bin/prod-entrypoint.sh"]
+
+# Setting the ENTRYPOINT to execute the commands
+ENTRYPOINT ["/bin/bash", "-c", "set -e; yarn workspace backend migrate-production; exec \"$@\"", "--"]
+
+# CMD to run your application, following the ENTRYPOINT
 CMD ["yarn", "workspace", "backend", "start"]
