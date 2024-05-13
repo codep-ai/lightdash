@@ -1,3 +1,33 @@
+# [0.1091.0](https://github.com/lightdash/lightdash/compare/0.1090.9...0.1091.0) (2024-05-13)
+
+
+### Features
+
+* enable sentry distributed tracing ([#10042](https://github.com/lightdash/lightdash/issues/10042)) ([0474fc4](https://github.com/lightdash/lightdash/commit/0474fc4cba6f963700788d8ea0fd543a23ef8939))
+
+## [0.1090.9](https://github.com/lightdash/lightdash/compare/0.1090.8...0.1090.9) (2024-05-13)
+
+
+### Bug Fixes
+
+* add select all if no tabs ([#10048](https://github.com/lightdash/lightdash/issues/10048)) ([b74754b](https://github.com/lightdash/lightdash/commit/b74754bb43c70389f76e3b2ea61fd35353c96d9e))
+
+## [0.1090.8](https://github.com/lightdash/lightdash/compare/0.1090.7...0.1090.8) (2024-05-13)
+
+
+### Bug Fixes
+
+* apply dashboard filters to underlying data query ([#10032](https://github.com/lightdash/lightdash/issues/10032)) ([c534ac5](https://github.com/lightdash/lightdash/commit/c534ac5479c8520e344765904b5eb8533831ad80))
+* switch tab clears temp filters state ([#10025](https://github.com/lightdash/lightdash/issues/10025)) ([a1d3e1c](https://github.com/lightdash/lightdash/commit/a1d3e1cf6850d8ffbd1c144a9e51abe5cc922600))
+
+## [0.1090.7](https://github.com/lightdash/lightdash/compare/0.1090.6...0.1090.7) (2024-05-13)
+
+
+### Bug Fixes
+
+* empty integrations redirection ([#10044](https://github.com/lightdash/lightdash/issues/10044)) ([1e19031](https://github.com/lightdash/lightdash/commit/1e190310e81bb48f0497879dd1d7e6215c87e410))
+* fix undefiled type table calculation on bignumber ([#10031](https://github.com/lightdash/lightdash/issues/10031)) ([e0be1df](https://github.com/lightdash/lightdash/commit/e0be1dfdcce985b2cc7b0ec3cc53787c5dc156da))
+
 ## [0.1090.6](https://github.com/lightdash/lightdash/compare/0.1090.5...0.1090.6) (2024-05-10)
 
 
