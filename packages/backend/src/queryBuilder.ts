@@ -1,11 +1,11 @@
 import {
     assertUnreachable,
     BinType,
+    CompiledCustomSqlDimension,
     CompiledDimension,
     CompiledMetricQuery,
     CustomBinDimension,
     CustomDimension,
-    CustomSqlDimension,
     DbtModelJoinType,
     Explore,
     fieldId,
@@ -22,12 +22,13 @@ import {
     getFieldQuoteChar,
     getFieldsFromMetricQuery,
     getFilterRulesFromGroup,
+    getItemId,
     getMetrics,
     getSqlForTruncatedDate,
     IntrinsicUserAttributes,
     isAndFilterGroup,
+    isCompiledCustomSqlDimension,
     isCustomBinDimension,
-    isCustomSqlDimension,
     isFilterGroup,
     ItemsMap,
     parseAllReferences,
@@ -277,21 +278,24 @@ export const sortDayOfWeekName = (
 };
 
 export const getCustomSqlDimensionSql = ({
+    warehouseClient,
     customDimensions,
 }: {
-    customDimensions: CustomSqlDimension[] | undefined;
-}): { selects: string[] } | undefined => {
+    warehouseClient: WarehouseClient;
+    customDimensions: CompiledCustomSqlDimension[] | undefined;
+}): { selects: string[]; tables: string[] } | undefined => {
     if (customDimensions === undefined || customDimensions.length === 0) {
         return undefined;
     }
-
+    const fieldQuoteChar = getFieldQuoteChar(warehouseClient.credentials.type);
     const selects = customDimensions.map<string>(
         (customDimension) =>
-            `  (${customDimension.sql}) AS ${customDimension.id}`,
+            `  (${customDimension.compiledSql}) AS ${fieldQuoteChar}${customDimension.id}${fieldQuoteChar}`,
     );
 
     return {
         selects,
+        tables: customDimensions.flatMap((d) => d.tablesReferences),
     };
 };
 
@@ -645,7 +649,7 @@ export const buildQuery = ({
         sorts,
         limit,
         additionalMetrics,
-        customDimensions,
+        compiledCustomDimensions,
         timezone,
     } = compiledMetricQuery;
 
@@ -676,13 +680,15 @@ export const buildQuery = ({
         warehouseClient,
         explore,
         customDimensions:
-            compiledMetricQuery.customDimensions?.filter(isCustomBinDimension),
+            compiledCustomDimensions?.filter(isCustomBinDimension),
         userAttributes,
         sorts,
     });
     const customSqlDimensionSql = getCustomSqlDimensionSql({
-        customDimensions:
-            compiledMetricQuery.customDimensions?.filter(isCustomSqlDimension),
+        warehouseClient,
+        customDimensions: compiledCustomDimensions?.filter(
+            isCompiledCustomSqlDimension,
+        ),
     });
 
     const sqlFrom = `FROM ${baseTable} AS ${fieldQuoteChar}${explore.baseTable}${fieldQuoteChar}`;
@@ -733,6 +739,7 @@ export const buildQuery = ({
             return [...acc, ...(dim.tablesReferences || [dim.table])];
         }, []),
         ...(customBinDimensionSql?.tables || []),
+        ...(customSqlDimensionSql?.tables || []),
         ...getFilterRulesFromGroup(filters.dimensions).reduce<string[]>(
             (acc, filterRule) => {
                 const dim = getDimensionFromId(
@@ -847,8 +854,8 @@ export const buildQuery = ({
 
     const fieldOrders = sorts.map((sort) => {
         if (
-            customDimensions &&
-            customDimensions.find(
+            compiledCustomDimensions &&
+            compiledCustomDimensions.find(
                 (customDimension) =>
                     getCustomDimensionId(customDimension) === sort.fieldId &&
                     isCustomBinDimension(customDimension),
@@ -884,11 +891,10 @@ export const buildQuery = ({
 
     const sqlOrderBy =
         fieldOrders.length > 0 ? `ORDER BY ${fieldOrders.join(', ')}` : '';
-    const sqlFilterRule = (filter: FilterRule, fieldType: FieldType) => {
-        if (fieldType === FieldType.TABLE_CALCULATION) {
+    const sqlFilterRule = (filter: FilterRule, fieldType?: FieldType) => {
+        if (!fieldType) {
             const field = compiledMetricQuery.compiledTableCalculations?.find(
-                (tc) =>
-                    `table_calculation_${tc.name}` === filter.target.fieldId,
+                (tc) => getItemId(tc) === filter.target.fieldId,
             );
             return renderTableCalculationFilterRuleSql(
                 filter,
@@ -931,7 +937,7 @@ export const buildQuery = ({
 
     const getNestedFilterSQLFromGroup = (
         filterGroup: FilterGroup | undefined,
-        fieldType: FieldType,
+        fieldType?: FieldType,
     ): string | undefined => {
         if (filterGroup) {
             const operator = isAndFilterGroup(filterGroup) ? 'AND' : 'OR';
@@ -985,7 +991,6 @@ export const buildQuery = ({
 
     const tableCalculationFilters = getNestedFilterSQLFromGroup(
         filters.tableCalculations,
-        FieldType.TABLE_CALCULATION,
     );
 
     const sqlLimit = `LIMIT ${limit}`;

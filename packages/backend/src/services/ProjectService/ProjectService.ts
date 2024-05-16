@@ -39,6 +39,7 @@ import {
     ExploreError,
     FeatureFlags,
     fieldId as getFieldId,
+    FilterableDimension,
     FilterableField,
     FilterGroup,
     FilterGroupItem,
@@ -66,6 +67,7 @@ import {
     JobStatusType,
     JobStepType,
     JobType,
+    Metric,
     MetricQuery,
     MetricType,
     MissingWarehouseCredentialsError,
@@ -971,8 +973,7 @@ export class ProjectService extends BaseService {
 
         const renderedFilters = filterRules.map((filterRule) => {
             const field = compiledTableCalculations.find(
-                ({ name }) =>
-                    `table_calculation_${name}` === filterRule.target.fieldId,
+                (tc) => getItemId(tc) === filterRule.target.fieldId,
             );
 
             /**
@@ -2659,6 +2660,7 @@ export class ProjectService extends BaseService {
         user: SessionUser,
         projectUuid: string,
         filtered: boolean,
+        includeErrors: boolean = true,
     ): Promise<SummaryExplore[]> {
         const { organizationUuid } = await this.projectModel.getSummary(
             projectUuid,
@@ -2687,26 +2689,30 @@ export class ProjectService extends BaseService {
         const allExploreSummaries = explores.reduce<SummaryExplore[]>(
             (acc, explore) => {
                 if (isExploreError(explore)) {
-                    return [
-                        ...acc,
-                        {
-                            name: explore.name,
-                            label: explore.label,
-                            tags: explore.tags,
-                            groupLabel: explore.groupLabel,
-                            errors: explore.errors,
-                            databaseName:
-                                explore.baseTable &&
-                                explore.tables?.[explore.baseTable]?.database,
-                            schemaName:
-                                explore.baseTable &&
-                                explore.tables?.[explore.baseTable]?.schema,
-                            description:
-                                explore.baseTable &&
-                                explore.tables?.[explore.baseTable]
-                                    ?.description,
-                        },
-                    ];
+                    return includeErrors
+                        ? [
+                              ...acc,
+                              {
+                                  name: explore.name,
+                                  label: explore.label,
+                                  tags: explore.tags,
+                                  groupLabel: explore.groupLabel,
+                                  errors: explore.errors,
+                                  databaseName:
+                                      explore.baseTable &&
+                                      explore.tables?.[explore.baseTable]
+                                          ?.database,
+                                  schemaName:
+                                      explore.baseTable &&
+                                      explore.tables?.[explore.baseTable]
+                                          ?.schema,
+                                  description:
+                                      explore.baseTable &&
+                                      explore.tables?.[explore.baseTable]
+                                          ?.description,
+                              },
+                          ]
+                        : acc;
                 }
                 if (
                     doesExploreMatchRequiredAttributes(explore, userAttributes)
@@ -2912,7 +2918,7 @@ export class ProjectService extends BaseService {
     async getAvailableFiltersForSavedQuery(
         user: SessionUser,
         savedChartUuid: string,
-    ): Promise<FilterableField[]> {
+    ): Promise<FilterableDimension[]> {
         const transaction = Sentry.getCurrentHub()
             ?.getScope()
             ?.getTransaction();
@@ -3052,7 +3058,7 @@ export class ProjectService extends BaseService {
             span?.finish();
         }
 
-        const allFilterableFields: FilterableField[] = [];
+        const allFilterableFields: FilterableDimension[] = [];
         const filterIndexMap: Record<string, number> = {};
 
         allFilters.forEach((filterSet) => {
@@ -3861,6 +3867,18 @@ export class ProjectService extends BaseService {
             )
         ) {
             throw new ForbiddenError();
+        }
+
+        if (
+            data.metricQuery.customDimensions?.some(isCustomSqlDimension) &&
+            user.ability.cannot(
+                'manage',
+                subject('CustomSql', { organizationUuid, projectUuid }),
+            )
+        ) {
+            throw new ForbiddenError(
+                'User cannot run queries with custom SQL dimensions',
+            );
         }
 
         const results = await this._calculateTotal(

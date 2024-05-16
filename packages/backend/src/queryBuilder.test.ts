@@ -9,6 +9,7 @@ import {
     assertValidDimensionRequiredAttribute,
     buildQuery,
     getCustomBinDimensionSql,
+    getCustomSqlDimensionSql,
     replaceUserAttributes,
     sortDayOfWeekName,
     sortMonthName,
@@ -18,6 +19,7 @@ import {
     COMPILED_DIMENSION,
     COMPILED_MONTH_NAME_DIMENSION,
     COMPILED_WEEK_NAME_DIMENSION,
+    CUSTOM_SQL_DIMENSION,
     EXPLORE,
     EXPLORE_ALL_JOIN_TYPES_CHAIN,
     EXPLORE_BIGQUERY,
@@ -532,6 +534,18 @@ describe('with custom dimensions', () => {
         ).toStrictEqual(undefined);
     });
 
+    it('getCustomSqlDimensionSql with custom sql dimension', () => {
+        expect(
+            getCustomSqlDimensionSql({
+                warehouseClient: bigqueryClientMock,
+                customDimensions: [CUSTOM_SQL_DIMENSION],
+            }),
+        ).toStrictEqual({
+            selects: ['  ("table1".dim1 < 18) AS `is_adult`'],
+            tables: ['table1'],
+        });
+    });
+
     it('getCustomDimensionSql with custom dimension', () => {
         expect(
             getCustomBinDimensionSql({
@@ -539,7 +553,7 @@ describe('with custom dimensions', () => {
 
                 explore: EXPLORE,
                 customDimensions:
-                    METRIC_QUERY_WITH_CUSTOM_DIMENSION.customDimensions?.filter(
+                    METRIC_QUERY_WITH_CUSTOM_DIMENSION.compiledCustomDimensions?.filter(
                         isCustomBinDimension,
                     ),
                 userAttributes: {},
@@ -650,7 +664,7 @@ LIMIT 10`);
                 explore: EXPLORE,
                 compiledMetricQuery: {
                     ...METRIC_QUERY_WITH_CUSTOM_DIMENSION,
-                    customDimensions: [
+                    compiledCustomDimensions: [
                         {
                             id: 'age_range',
                             name: 'Age range',
@@ -745,7 +759,7 @@ LIMIT 10`);
                 warehouseClient: bigqueryClientMock,
                 explore: EXPLORE,
                 customDimensions:
-                    METRIC_QUERY_WITH_CUSTOM_DIMENSION.customDimensions?.filter(
+                    METRIC_QUERY_WITH_CUSTOM_DIMENSION.compiledCustomDimensions?.filter(
                         isCustomBinDimension,
                     ),
                 userAttributes: {},
@@ -835,7 +849,7 @@ LIMIT 10`);
                 explore: EXPLORE,
                 compiledMetricQuery: {
                     ...METRIC_QUERY_WITH_CUSTOM_DIMENSION,
-                    customDimensions: [
+                    compiledCustomDimensions: [
                         {
                             id: 'age_range',
                             name: 'Age range',

@@ -2,7 +2,9 @@ import { type Explore } from '../types/explore';
 import {
     DimensionType,
     fieldId,
+    isCustomBinDimension,
     isCustomDimension,
+    isCustomSqlDimension,
     isDimension,
     isField,
     isTableCalculation,
@@ -13,6 +15,7 @@ import {
     type Dimension,
     type Field,
     type Item,
+    type ItemsMap,
     type TableCalculation,
 } from '../types/field';
 import {
@@ -51,7 +54,10 @@ export const isNumericItem = (
     if (!item) {
         return false;
     }
-    if (isCustomDimension(item)) return false;
+    if (isCustomBinDimension(item)) return false;
+    if (isCustomSqlDimension(item)) {
+        return isNumericType(item.dimensionType);
+    }
     if (isField(item) || isAdditionalMetric(item) || isTableCalculation(item)) {
         return isNumericType(
             item.type as DimensionType | MetricType | TableCalculationType,
@@ -68,9 +74,7 @@ export const findItem = (
         isField(item) ? fieldId(item) === id : item.name === id,
     );
 
-export const getItemId = (
-    item: Field | AdditionalMetric | TableCalculation | CustomDimension,
-) => {
+export const getItemId = (item: ItemsMap[string] | AdditionalMetric) => {
     if (isCustomDimension(item)) return getCustomDimensionId(item);
 
     return isField(item) || isAdditionalMetric(item)

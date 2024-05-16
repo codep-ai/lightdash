@@ -3,13 +3,16 @@ import {
     CustomFormatType,
     fieldId as getFieldId,
     friendlyName,
+    getFilterableDimensionsFromItemsMap,
     isAdditionalMetric,
+    isCustomDimension,
     isDimension,
     MetricType,
     NumberSeparator,
     type AdditionalMetric,
     type CustomFormat,
     type Dimension,
+    type FilterableDimension,
 } from '@lightdash/common';
 import {
     Accordion,
@@ -85,6 +88,8 @@ export const CustomMetricModal = () => {
 
     const { projectUuid, fieldsMap, startOfWeek } = useDataForFiltersProvider();
 
+    const dimensionsMap = getFilterableDimensionsFromItemsMap(fieldsMap);
+
     const form = useForm<
         Pick<AdditionalMetric, 'percentile'> & {
             format: CustomFormat;
@@ -145,13 +150,14 @@ export const CustomMetricModal = () => {
     useEffect(() => {
         if (!item || !customMetricType) return;
 
-        if (item.label && customMetricType) {
+        const label = isCustomDimension(item) ? item.name : item.label;
+        if (label && customMetricType) {
             setFieldValue(
                 'customMetricLabel',
                 isEditing
-                    ? item.label
+                    ? label
                     : customMetricType
-                    ? `${friendlyName(customMetricType)} of ${item.label}`
+                    ? `${friendlyName(customMetricType)} of ${label}`
                     : '',
             );
         }
@@ -225,6 +231,15 @@ export const CustomMetricModal = () => {
                 addAdditionalMetric({
                     uuid: uuidv4(),
                     baseDimensionName: item.name,
+                    ...data,
+                });
+                showToastSuccess({
+                    title: 'Custom metric added successfully',
+                });
+            } else if (isCustomDimension(item)) {
+                addAdditionalMetric({
+                    uuid: uuidv4(),
+                    // Do not add baseDimensionName to avoid invalid validation errors in queryBuilder
                     ...data,
                 });
                 showToastSuccess({
@@ -321,9 +336,11 @@ export const CustomMetricModal = () => {
                                 </Text>
                             </Accordion.Control>
                             <Accordion.Panel>
-                                <FiltersProvider
+                                <FiltersProvider<
+                                    Record<string, FilterableDimension>
+                                >
                                     projectUuid={projectUuid}
-                                    fieldsMap={fieldsMap}
+                                    itemsMap={dimensionsMap}
                                     startOfWeek={startOfWeek ?? undefined}
                                     popoverProps={{
                                         withinPortal: true,

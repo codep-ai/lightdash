@@ -1,5 +1,6 @@
 import {
     BinType,
+    CompiledCustomSqlDimension,
     CompiledDimension,
     CompiledMetricQuery,
     CompiledTable,
@@ -500,6 +501,7 @@ export const METRIC_QUERY_JOIN_CHAIN: CompiledMetricQuery = {
     tableCalculations: [],
     compiledTableCalculations: [],
     compiledAdditionalMetrics: [],
+    compiledCustomDimensions: [],
 };
 
 export const EXPLORE_WITH_SQL_FILTER = {
@@ -570,6 +572,7 @@ export const METRIC_QUERY: CompiledMetricQuery = {
         },
     ],
     compiledAdditionalMetrics: [],
+    compiledCustomDimensions: [],
 };
 
 export const METRIC_QUERY_WITH_CUSTOM_DIMENSION: CompiledMetricQuery = {
@@ -582,7 +585,7 @@ export const METRIC_QUERY_WITH_CUSTOM_DIMENSION: CompiledMetricQuery = {
     compiledAdditionalMetrics: [],
     compiledTableCalculations: [],
     tableCalculations: [],
-    customDimensions: [
+    compiledCustomDimensions: [
         {
             id: 'age_range',
             name: 'Age range',
@@ -618,6 +621,7 @@ export const METRIC_QUERY_TWO_TABLES: CompiledMetricQuery = {
         },
     ],
     compiledAdditionalMetrics: [],
+    compiledCustomDimensions: [],
 };
 
 export const METRIC_QUERY_WITH_TABLE_REFERENCE: CompiledMetricQuery = {
@@ -630,6 +634,7 @@ export const METRIC_QUERY_WITH_TABLE_REFERENCE: CompiledMetricQuery = {
     tableCalculations: [],
     compiledTableCalculations: [],
     compiledAdditionalMetrics: [],
+    compiledCustomDimensions: [],
 };
 
 export const METRIC_QUERY_WITH_TABLE_REFERENCE_SQL = `SELECT
@@ -666,6 +671,7 @@ export const METRIC_QUERY_WITH_FILTER: CompiledMetricQuery = {
     tableCalculations: [],
     compiledTableCalculations: [],
     compiledAdditionalMetrics: [],
+    compiledCustomDimensions: [],
 };
 
 export const METRIC_QUERY_WITH_METRIC_FILTER: CompiledMetricQuery = {
@@ -692,6 +698,7 @@ export const METRIC_QUERY_WITH_METRIC_FILTER: CompiledMetricQuery = {
     tableCalculations: [],
     compiledTableCalculations: [],
     compiledAdditionalMetrics: [],
+    compiledCustomDimensions: [],
 };
 
 export const METRIC_QUERY_WITH_METRIC_DISABLED_FILTER_THAT_REFERENCES_JOINED_TABLE_DIM: CompiledMetricQuery =
@@ -721,6 +728,7 @@ export const METRIC_QUERY_WITH_METRIC_DISABLED_FILTER_THAT_REFERENCES_JOINED_TAB
         tableCalculations: [],
         compiledTableCalculations: [],
         compiledAdditionalMetrics: [],
+        compiledCustomDimensions: [],
     };
 
 export const METRIC_QUERY_WITH_NESTED_METRIC_FILTERS: CompiledMetricQuery = {
@@ -768,6 +776,7 @@ export const METRIC_QUERY_WITH_NESTED_METRIC_FILTERS: CompiledMetricQuery = {
     tableCalculations: [],
     compiledTableCalculations: [],
     compiledAdditionalMetrics: [],
+    compiledCustomDimensions: [],
 };
 
 export const METRIC_QUERY_WITH_FILTER_OR_OPERATOR: CompiledMetricQuery = {
@@ -801,6 +810,7 @@ export const METRIC_QUERY_WITH_FILTER_OR_OPERATOR: CompiledMetricQuery = {
     tableCalculations: [],
     compiledTableCalculations: [],
     compiledAdditionalMetrics: [],
+    compiledCustomDimensions: [],
 };
 
 export const METRIC_QUERY_WITH_DISABLED_FILTER: CompiledMetricQuery = {
@@ -828,6 +838,7 @@ export const METRIC_QUERY_WITH_DISABLED_FILTER: CompiledMetricQuery = {
     tableCalculations: [],
     compiledTableCalculations: [],
     compiledAdditionalMetrics: [],
+    compiledCustomDimensions: [],
 };
 
 export const METRIC_QUERY_WITH_FILTER_AND_DISABLED_FILTER: CompiledMetricQuery =
@@ -863,6 +874,7 @@ export const METRIC_QUERY_WITH_FILTER_AND_DISABLED_FILTER: CompiledMetricQuery =
         tableCalculations: [],
         compiledTableCalculations: [],
         compiledAdditionalMetrics: [],
+        compiledCustomDimensions: [],
     };
 
 export const METRIC_QUERY_WITH_NESTED_FILTER_OPERATORS: CompiledMetricQuery = {
@@ -909,6 +921,7 @@ export const METRIC_QUERY_WITH_NESTED_FILTER_OPERATORS: CompiledMetricQuery = {
     tableCalculations: [],
     compiledTableCalculations: [],
     compiledAdditionalMetrics: [],
+    compiledCustomDimensions: [],
 };
 
 export const METRIC_QUERY_WITH_EMPTY_FILTER: CompiledMetricQuery = {
@@ -926,6 +939,7 @@ export const METRIC_QUERY_WITH_EMPTY_FILTER: CompiledMetricQuery = {
     tableCalculations: [],
     compiledTableCalculations: [],
     compiledAdditionalMetrics: [],
+    compiledCustomDimensions: [],
 };
 
 export const METRIC_QUERY_WITH_EMPTY_METRIC_FILTER: CompiledMetricQuery = {
@@ -943,6 +957,7 @@ export const METRIC_QUERY_WITH_EMPTY_METRIC_FILTER: CompiledMetricQuery = {
     tableCalculations: [],
     compiledTableCalculations: [],
     compiledAdditionalMetrics: [],
+    compiledCustomDimensions: [],
 };
 
 export const METRIC_QUERY_WITH_ADDITIONAL_METRIC: CompiledMetricQuery = {
@@ -990,6 +1005,7 @@ export const METRIC_QUERY_WITH_ADDITIONAL_METRIC: CompiledMetricQuery = {
             hidden: false,
         },
     ],
+    compiledCustomDimensions: [],
 };
 
 export const METRIC_QUERY_WITH_EMPTY_FILTER_GROUPS = {
@@ -1021,7 +1037,7 @@ export const METRIC_QUERY_WITH_TABLE_CALCULATION_FILTER: CompiledMetricQuery = {
                         fieldId: 'calc3',
                     },
                     operator: FilterOperator.EQUALS,
-                    values: [],
+                    values: ['my value'],
                 },
             ],
         },
@@ -1044,6 +1060,7 @@ export const METRIC_QUERY_WITH_TABLE_CALCULATION_FILTER: CompiledMetricQuery = {
         },
     ],
     compiledAdditionalMetrics: [],
+    compiledCustomDimensions: [],
 };
 
 export const COMPILED_DIMENSION: CompiledDimension = {
@@ -1307,7 +1324,7 @@ FROM metrics
 
 )
 SELECT * FROM table_calculations WHERE ((
-  1=1
+  ("calc3") IN ('my value')
 ))
 ORDER BY "table1_metric1" DESC
 LIMIT 10`;
@@ -1374,3 +1391,14 @@ export const WEEK_NAME_SORT_SQL = `(
         ELSE 0
     END
 )`;
+
+export const CUSTOM_SQL_DIMENSION: CompiledCustomSqlDimension = {
+    id: 'is_adult',
+    name: 'Is adult',
+    table: 'table1',
+    type: CustomDimensionType.SQL,
+    sql: '${table1.dim1} < 18',
+    dimensionType: DimensionType.BOOLEAN,
+    compiledSql: '"table1".dim1 < 18',
+    tablesReferences: ['table1'],
+};

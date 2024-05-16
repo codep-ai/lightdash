@@ -1,3 +1,121 @@
+## [0.1096.4](https://github.com/lightdash/lightdash/compare/0.1096.3...0.1096.4) (2024-05-16)
+
+
+### Bug Fixes
+
+* table calculation group stack ([#10065](https://github.com/lightdash/lightdash/issues/10065)) ([943438b](https://github.com/lightdash/lightdash/commit/943438b4d5a17dba5f253a9a2f2cf0b4da3d6582))
+
+## [0.1096.3](https://github.com/lightdash/lightdash/compare/0.1096.2...0.1096.3) (2024-05-16)
+
+
+### Bug Fixes
+
+* display missing custom metrics and dimensions ([#10070](https://github.com/lightdash/lightdash/issues/10070)) ([e41b9a8](https://github.com/lightdash/lightdash/commit/e41b9a8d798d8867375bb1f7ea88900e6580e03c))
+
+## [0.1096.2](https://github.com/lightdash/lightdash/compare/0.1096.1...0.1096.2) (2024-05-16)
+
+
+### Bug Fixes
+
+* add custom metric from custom dimension ([#10077](https://github.com/lightdash/lightdash/issues/10077)) ([9d87bef](https://github.com/lightdash/lightdash/commit/9d87bef725af67eb918effb3c1fc6a8b703e5749))
+
+## [0.1096.1](https://github.com/lightdash/lightdash/compare/0.1096.0...0.1096.1) (2024-05-15)
+
+
+### Bug Fixes
+
+* disable chart link while editing dashboard ([#10081](https://github.com/lightdash/lightdash/issues/10081)) ([51b24a9](https://github.com/lightdash/lightdash/commit/51b24a97f893c3f994f8c0dd66e32dc535ecc4b0))
+
+# [0.1096.0](https://github.com/lightdash/lightdash/compare/0.1095.4...0.1096.0) (2024-05-15)
+
+
+### Features
+
+* show space in select if adding to space ([#10086](https://github.com/lightdash/lightdash/issues/10086)) ([f05e04d](https://github.com/lightdash/lightdash/commit/f05e04d4564262541371efd95c821c47ea97c87a))
+
+## [0.1095.4](https://github.com/lightdash/lightdash/compare/0.1095.3...0.1095.4) (2024-05-15)
+
+
+### Bug Fixes
+
+* clear dashboard storage before explore from here ([#10071](https://github.com/lightdash/lightdash/issues/10071)) ([7578924](https://github.com/lightdash/lightdash/commit/7578924221b253b243c1c67752cc9ef3878aa672))
+
+## [0.1095.3](https://github.com/lightdash/lightdash/compare/0.1095.2...0.1095.3) (2024-05-15)
+
+
+### Bug Fixes
+
+* fix type error or undefined param.encode.x ([#10076](https://github.com/lightdash/lightdash/issues/10076)) ([f31d237](https://github.com/lightdash/lightdash/commit/f31d237785067509a5c84f491e01d61caf234d76))
+
+## [0.1095.2](https://github.com/lightdash/lightdash/compare/0.1095.1...0.1095.2) (2024-05-14)
+
+
+### Bug Fixes
+
+* conditional formatting table calculation ([#10053](https://github.com/lightdash/lightdash/issues/10053)) ([65918b6](https://github.com/lightdash/lightdash/commit/65918b6d569d8b4bd9fef8c504dda1f5fa017e14))
+* usage analytics groups ([#10049](https://github.com/lightdash/lightdash/issues/10049)) ([ed15fda](https://github.com/lightdash/lightdash/commit/ed15fdaf977a7b806b0ec621b16c038593ff0d81))
+
+## [0.1095.1](https://github.com/lightdash/lightdash/compare/0.1095.0...0.1095.1) (2024-05-14)
+
+
+### Bug Fixes
+
+* Revert "fix: dashboard chart from explore from here deleted all current dashboard tiles" ([#10067](https://github.com/lightdash/lightdash/issues/10067)) ([ff8e101](https://github.com/lightdash/lightdash/commit/ff8e101f7718f7d5d700dadc622e6d49b36c55a5))
+
+# [0.1095.0](https://github.com/lightdash/lightdash/compare/0.1094.0...0.1095.0) (2024-05-14)
+
+
+### Features
+
+* add "include errors" arg to all explores summaries ([#10064](https://github.com/lightdash/lightdash/issues/10064)) ([0803493](https://github.com/lightdash/lightdash/commit/08034934dc2d3ff98bce64c79e13c69741011632))
+
+# [0.1094.0](https://github.com/lightdash/lightdash/compare/0.1093.2...0.1094.0) (2024-05-13)
+
+
+### Features
+
+* enable sentry backend profiling ([#10059](https://github.com/lightdash/lightdash/issues/10059)) ([dfaa7d7](https://github.com/lightdash/lightdash/commit/dfaa7d710c276ed4f6d0ec65ce6a710e4ed96ef3))
+
+## [0.1093.2](https://github.com/lightdash/lightdash/compare/0.1093.1...0.1093.2) (2024-05-13)
+
+
+### Bug Fixes
+
+* custom sql dimension alias quotes ([#10050](https://github.com/lightdash/lightdash/issues/10050)) ([4cd696f](https://github.com/lightdash/lightdash/commit/4cd696f02b43978c5d9f2beae3504cd53e35a9fe))
+
+## [0.1093.1](https://github.com/lightdash/lightdash/compare/0.1093.0...0.1093.1) (2024-05-13)
+
+
+### Bug Fixes
+
+* dashboard chart from explore from here was overwriting the current tiles ([#10058](https://github.com/lightdash/lightdash/issues/10058)) ([4ef93b4](https://github.com/lightdash/lightdash/commit/4ef93b4a171adbf830d84b2746b528425a13a7a2))
+
+# [0.1093.0](https://github.com/lightdash/lightdash/compare/0.1092.1...0.1093.0) (2024-05-13)
+
+
+### Bug Fixes
+
+* custom dimension value type ([#10045](https://github.com/lightdash/lightdash/issues/10045)) ([963108e](https://github.com/lightdash/lightdash/commit/963108ebb62e77ca9b4eb24ddcf55734d818b1e5))
+
+
+### Features
+
+* allow common properties for text styling in markdown tile html tags ([#9979](https://github.com/lightdash/lightdash/issues/9979)) ([2bc17e5](https://github.com/lightdash/lightdash/commit/2bc17e56f3ab7cca64047b3fe7df53eedfe08b87))
+
+## [0.1092.1](https://github.com/lightdash/lightdash/compare/0.1092.0...0.1092.1) (2024-05-13)
+
+
+### Bug Fixes
+
+* sql dimension permission on csv download and total calculation ([#10033](https://github.com/lightdash/lightdash/issues/10033)) ([57a853e](https://github.com/lightdash/lightdash/commit/57a853e9fb7ed9c2108b9ceb4930b5af618a2d64))
+
+# [0.1092.0](https://github.com/lightdash/lightdash/compare/0.1091.0...0.1092.0) (2024-05-13)
+
+
+### Features
+
+* custom dimensions can reference dimensions ([#10041](https://github.com/lightdash/lightdash/issues/10041)) ([9137595](https://github.com/lightdash/lightdash/commit/9137595d38c6d48edac0f14962f508faec57d94a))
+
 # [0.1091.0](https://github.com/lightdash/lightdash/compare/0.1090.9...0.1091.0) (2024-05-13)
 
 
