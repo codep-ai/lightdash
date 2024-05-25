@@ -12,7 +12,6 @@ import { type DbtCloudIntegration } from './types/dbtCloud';
 import { type Explore, type SummaryExplore } from './types/explore';
 import {
     DimensionType,
-    fieldId,
     friendlyName,
     isCustomDimension,
     isDimension,
@@ -31,11 +30,7 @@ import {
     type Metric,
     type TableCalculation,
 } from './types/field';
-import {
-    getCustomDimensionId,
-    type AdditionalMetric,
-    type MetricQuery,
-} from './types/metricQuery';
+import { type AdditionalMetric, type MetricQuery } from './types/metricQuery';
 import {
     type OrganizationMemberProfile,
     type OrganizationMemberRole,
@@ -115,6 +110,7 @@ import {
 import { type UserWarehouseCredentials } from './types/userWarehouseCredentials';
 import { type ValidationResponse } from './types/validation';
 
+import { type ApiCatalogMetadataResults } from './types/catalog';
 import { TimeFrames } from './types/timeFrames';
 import { convertAdditionalMetric } from './utils/additionalMetrics';
 import { getFields } from './utils/fields';
@@ -141,6 +137,7 @@ export * from './types/api/notifications';
 export * from './types/api/share';
 export * from './types/api/success';
 export * from './types/api/uuid';
+export * from './types/catalog';
 export * from './types/comments';
 export * from './types/conditionalFormatting';
 export * from './types/conditionalRule';
@@ -358,7 +355,7 @@ export const findFieldByIdInExplore = (
     explore: Explore,
     id: FieldId,
 ): Field | undefined =>
-    getFields(explore).find((field) => fieldId(field) === id);
+    getFields(explore).find((field) => getItemId(field) === id);
 
 export const snakeCaseName = (text: string): string =>
     text
@@ -636,7 +633,8 @@ type ApiResults =
     | ApiSuccessEmpty
     | ApiCreateProjectResults
     | ApiAiDashboardSummaryResponse['results']
-    | ApiAiGetDashboardSummaryResponse['results'];
+    | ApiAiGetDashboardSummaryResponse['results']
+    | ApiCatalogMetadataResults;
 
 export type ApiResponse<T extends ApiResults = ApiResults> = {
     status: 'ok';
@@ -873,7 +871,7 @@ export function getFieldMap(
     return [...getFields(explore), ...additionalMetrics].reduce(
         (sum, field) => ({
             ...sum,
-            [fieldId(field)]: field,
+            [getItemId(field)]: field,
         }),
         {},
     );
@@ -967,7 +965,6 @@ export function itemsInMetricQuery(
               ...metricQuery.metrics,
               ...metricQuery.dimensions,
               ...(metricQuery.tableCalculations || []).map((tc) => tc.name),
-              ...(metricQuery.customDimensions || []).map(getCustomDimensionId),
           ];
 }
 

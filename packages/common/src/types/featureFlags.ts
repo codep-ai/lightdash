@@ -16,25 +16,11 @@ export enum FeatureFlags {
     /**/
     ShowDbtCloudProjectOption = 'show-dbt-cloud-project-option',
 
-    /**
-     * Use the new in-memory table calculations engine/duckdb
-     */
-    UseInMemoryTableCalculations = 'new-table-calculations-engine',
-
     /**/
     CustomSQLEnabled = 'custom-sql-enabled',
 
-    /* Shows the two-stage login flow */
-    newLoginEnabled = 'new-login-enabled',
-
     /* Show user groups */
     UserGroupsEnabled = 'user-groups-enabled',
-
-    /** */
-    LazyLoadDashboardTiles = 'lazy-load-dashboard-tiles',
-
-    /** Show option to use custom SQL dimension */
-    CustomSqlDimensions = 'custom-sql-dimensions',
 
     /** Enable dashboard tabs */
     DashboardTabs = 'dashboard_tabs',

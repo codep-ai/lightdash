@@ -1,17 +1,18 @@
 import { type Explore } from '../types/explore';
 import {
     DimensionType,
-    fieldId,
     isCustomBinDimension,
     isCustomDimension,
     isCustomSqlDimension,
     isDimension,
     isField,
+    isMetric,
     isTableCalculation,
     MetricType,
     TableCalculationType,
     type CompiledDimension,
     type CustomDimension,
+    type CustomSqlDimension,
     type Dimension,
     type Field,
     type Item,
@@ -19,7 +20,6 @@ import {
     type TableCalculation,
 } from '../types/field';
 import {
-    getCustomDimensionId,
     isAdditionalMetric,
     type AdditionalMetric,
 } from '../types/metricQuery';
@@ -43,43 +43,17 @@ export const isNumericType = (
     return numericTypes.includes(type);
 };
 
-export const isNumericItem = (
-    item:
-        | Field
-        | AdditionalMetric
-        | TableCalculation
-        | CustomDimension
-        | undefined,
+export const getItemId = (
+    item: ItemsMap[string] | AdditionalMetric | Pick<Field, 'name' | 'table'>,
 ) => {
-    if (!item) {
-        return false;
+    if (isCustomDimension(item)) {
+        return item.id;
     }
-    if (isCustomBinDimension(item)) return false;
-    if (isCustomSqlDimension(item)) {
-        return isNumericType(item.dimensionType);
+    if (isTableCalculation(item)) {
+        return item.name;
     }
-    if (isField(item) || isAdditionalMetric(item) || isTableCalculation(item)) {
-        return isNumericType(
-            item.type as DimensionType | MetricType | TableCalculationType,
-        );
-    }
-    return true;
-};
-
-export const findItem = (
-    items: Array<Field | TableCalculation | CustomDimension>,
-    id: string | undefined,
-) =>
-    items.find((item) =>
-        isField(item) ? fieldId(item) === id : item.name === id,
-    );
-
-export const getItemId = (item: ItemsMap[string] | AdditionalMetric) => {
-    if (isCustomDimension(item)) return getCustomDimensionId(item);
-
-    return isField(item) || isAdditionalMetric(item)
-        ? fieldId(item)
-        : item.name;
+    // dimension or metric or additional metric or field
+    return `${item.table}_${item.name.replaceAll('.', '__')}`;
 };
 
 export const getItemLabelWithoutTableName = (item: Item) => {
@@ -92,6 +66,41 @@ export const getItemLabelWithoutTableName = (item: Item) => {
 export const getItemLabel = (item: Item) =>
     (isField(item) ? `${item.tableLabel} ` : '') +
     getItemLabelWithoutTableName(item);
+
+export function getItemType(
+    item: ItemsMap[string] | AdditionalMetric,
+): DimensionType | MetricType | TableCalculationType {
+    if (isDimension(item) || isMetric(item)) {
+        return item.type;
+    }
+    if (isCustomSqlDimension(item)) {
+        return item.dimensionType;
+    }
+    if (isCustomBinDimension(item)) {
+        return DimensionType.STRING;
+    }
+    if (isTableCalculation(item)) {
+        return item.type ?? TableCalculationType.NUMBER;
+    }
+    if (isAdditionalMetric(item)) {
+        return item.type;
+    }
+    return DimensionType.STRING;
+}
+
+export function isNumericItem(
+    item:
+        | Field
+        | AdditionalMetric
+        | TableCalculation
+        | CustomDimension
+        | undefined,
+) {
+    if (!item) {
+        return false;
+    }
+    return isNumericType(getItemType(item));
+}
 
 export const getItemIcon = (
     item: Field | TableCalculation | AdditionalMetric | CustomDimension,
@@ -115,7 +124,12 @@ export const getItemColor = (
 };
 
 export const isDateItem = (
-    item: Field | AdditionalMetric | TableCalculation | undefined,
+    item:
+        | Field
+        | AdditionalMetric
+        | TableCalculation
+        | CustomSqlDimension
+        | undefined,
 ): boolean => {
     if (!item) {
         return false;

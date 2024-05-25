@@ -1,7 +1,7 @@
 import {
     BinType,
     CustomDimensionType,
-    fieldId,
+    getItemId,
     isCustomDimension,
     isDimension,
     snakeCaseName,
@@ -141,7 +141,7 @@ export const CustomBinDimensionModal: FC<{
             if (isEditing && isCustomDimension(item)) {
                 editCustomDimension(
                     {
-                        id: sanitizedId,
+                        id: item.id,
                         name: values.customDimensionLabel,
                         type: CustomDimensionType.BIN,
                         dimensionId: item.dimensionId,
@@ -162,7 +162,7 @@ export const CustomBinDimensionModal: FC<{
                     id: sanitizedId,
                     name: values.customDimensionLabel,
                     type: CustomDimensionType.BIN,
-                    dimensionId: fieldId(item),
+                    dimensionId: getItemId(item),
                     binType: values.binType,
                     binNumber: values.binConfig.fixedNumber.binNumber,
                     binWidth: values.binConfig.fixedWidth.binWidth,
@@ -303,9 +303,6 @@ export const CustomBinDimensionModal: FC<{
                                                     type="number"
                                                     {...toProps}
                                                 />
-                                                <Text color="gray.6" fw="400">
-                                                    and under{' '}
-                                                </Text>
                                             </Flex>
                                         );
                                     } else if (

@@ -1,13 +1,11 @@
 import {
     DimensionType,
-    fieldId,
     friendlyName,
-    getCustomDimensionId,
+    getItemId,
     isAdditionalMetric,
     isCustomDimension,
     isCustomSqlDimension,
     isDimension,
-    isField,
     isFilterableField,
     MetricType,
     type AdditionalMetric,
@@ -113,7 +111,7 @@ const TreeSingleNodeActions: FC<Props> = ({
             onChange={onMenuChange}
         >
             <Menu.Dropdown>
-                {isField(item) && isFilterableField(item) ? (
+                {!isAdditionalMetric(item) && isFilterableField(item) ? (
                     <Menu.Item
                         component="button"
                         icon={<MantineIcon icon={IconFilter} />}
@@ -157,7 +155,7 @@ const TreeSingleNodeActions: FC<Props> = ({
                                 track({
                                     name: EventName.REMOVE_CUSTOM_METRIC_CLICKED,
                                 });
-                                removeAdditionalMetric(fieldId(item));
+                                removeAdditionalMetric(getItemId(item));
                             }}
                         >
                             Remove custom metric
@@ -199,9 +197,7 @@ const TreeSingleNodeActions: FC<Props> = ({
                             icon={<MantineIcon icon={IconTrash} />}
                             onClick={(e) => {
                                 e.stopPropagation();
-                                removeCustomDimension(
-                                    getCustomDimensionId(item),
-                                );
+                                removeCustomDimension(getItemId(item));
                             }}
                         >
                             Remove custom dimension

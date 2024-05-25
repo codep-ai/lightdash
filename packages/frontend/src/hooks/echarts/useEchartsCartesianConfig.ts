@@ -9,6 +9,7 @@ import {
     getCustomFormatFromLegacy,
     getDateGroupLabel,
     getItemLabelWithoutTableName,
+    getItemType,
     getResultValueArray,
     hashFieldReference,
     isCompleteLayout,
@@ -91,9 +92,7 @@ const getAxisTypeFromField = (item?: ItemsMap[string]): string => {
             isTableCalculation(item) ||
             isCustomSqlDimension(item))
     ) {
-        const type = isCustomSqlDimension(item)
-            ? item.dimensionType
-            : item.type;
+        const type = getItemType(item);
         switch (type) {
             case TableCalculationType.NUMBER:
             case DimensionType.NUMBER:
@@ -1687,10 +1686,8 @@ const useEchartsCartesianConfig = (
                     return params[0].axisValueLabel;
                 };
                 // When flipping axes, we get all series in the chart
+
                 const tooltipRows = params
-                    .filter((param) =>
-                        flipAxes ? param.name === param.seriesName : true,
-                    )
                     .map((param) => {
                         const {
                             marker,

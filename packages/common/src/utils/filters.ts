@@ -3,12 +3,13 @@ import moment from 'moment';
 import { v4 as uuidv4 } from 'uuid';
 import {
     DimensionType,
-    fieldId,
+    isCustomSqlDimension,
     isDimension,
     isTableCalculation,
     MetricType,
     TableCalculationType,
     type CompiledField,
+    type CustomSqlDimension,
     type Field,
     type FilterableDimension,
     type FilterableField,
@@ -40,7 +41,7 @@ import { type MetricQuery } from '../types/metricQuery';
 import { TimeFrames } from '../types/timeFrames';
 import assertUnreachable from './assertUnreachable';
 import { formatDate } from './formatting';
-import { getItemId } from './item';
+import { getItemId, getItemType, isDateItem } from './item';
 
 export const getFilterRulesFromGroup = (
     filterGroup: FilterGroup | undefined,
@@ -102,13 +103,7 @@ export const getFilterGroupItemsPropertyName = (
 };
 
 export const getFilterTypeFromItem = (item: FilterableField): FilterType => {
-    const { type } = item;
-
-    if (type === undefined) {
-        // Type check for TableCalculationType
-        return FilterType.NUMBER;
-    }
-
+    const type = getItemType(item);
     switch (type) {
         case DimensionType.STRING:
         case MetricType.STRING:
@@ -164,7 +159,10 @@ export const getFilterRuleWithDefaultValue = <T extends FilterRule>(
             case FilterType.DATE: {
                 const value = values ? values[0] : undefined;
 
-                const isTimestamp = field.type === DimensionType.TIMESTAMP;
+                const isTimestamp =
+                    (isCustomSqlDimension(field)
+                        ? field.dimensionType
+                        : field.type) === DimensionType.TIMESTAMP;
                 if (
                     filterRule.operator === FilterOperator.IN_THE_PAST ||
                     filterRule.operator === FilterOperator.NOT_IN_THE_PAST ||
@@ -288,7 +286,7 @@ const getDefaultTileTargets = (
         return {
             ...acc,
             [tileUuid]: {
-                fieldId: fieldId(filterableField),
+                fieldId: getItemId(filterableField),
                 tableName: filterableField.table,
             },
         };
@@ -319,7 +317,9 @@ export const createDashboardFilterRuleFromField = ({
     isTemporary,
     value,
 }: {
-    field: Exclude<FilterableItem, TableCalculation> | CompiledField;
+    field:
+        | Exclude<FilterableItem, TableCalculation | CustomSqlDimension>
+        | CompiledField;
     availableTileFilters: Record<string, FilterableDimension[] | undefined>;
     isTemporary: boolean;
     value?: unknown;
@@ -331,7 +331,7 @@ export const createDashboardFilterRuleFromField = ({
             operator:
                 value === null ? FilterOperator.NULL : FilterOperator.EQUALS,
             target: {
-                fieldId: fieldId(field),
+                fieldId: getItemId(field),
                 tableName: field.table,
                 fieldName: field.name,
             },
@@ -354,7 +354,7 @@ export const addFilterRule = ({
     value,
 }: AddFilterRuleArgs): Filters => {
     const groupKey = ((f: any) => {
-        if (isDimension(f)) {
+        if (isDimension(f) || isCustomSqlDimension(f)) {
             return 'dimensions';
         }
         if (isTableCalculation(f)) {
@@ -410,6 +410,17 @@ const flattenSameFilterGroupType = (filterGroup: FilterGroup): FilterGroup => {
 };
 
 /**
+ * Checks if a dimension value is an invalid date before it is added to the filter
+ * @param item - The field to compare against the value
+ * @param value - The value to check
+ * @returns True if the value is an invalid date, false otherwise
+ */
+export const isDimensionValueInvalidDate = (
+    item: FilterableField,
+    value: any,
+) => isDateItem(item) && value.raw === 'Invalid Date'; // Message from moment.js when it can't parse a date
+
+/**
  * Takes a filter group and build a filters object from it based on the field type
  * @param filterGroup - The filter group to extract filters from
  * @param fields - Fields to compare against the filter group items to determine types
@@ -432,7 +443,10 @@ export const getFiltersFromGroup = (
             // determine the type of the field and add the rule it to the correct filters object property
             // always keep the parent filter group type (AND/OR) when adding the filter rules
             if (fieldInRule) {
-                if (isDimension(fieldInRule)) {
+                if (
+                    isDimension(fieldInRule) ||
+                    isCustomSqlDimension(fieldInRule)
+                ) {
                     accumulator.dimensions = {
                         id: uuidv4(),
                         ...accumulator.dimensions,

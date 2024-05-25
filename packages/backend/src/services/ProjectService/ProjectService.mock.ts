@@ -288,6 +288,7 @@ export const spacesWithSavedCharts: Space[] = [
         projectUuid,
         dashboards: [],
         access: [],
+        groupsAccess: [],
     },
 ];
 
@@ -305,6 +306,7 @@ export const spacesWithNoSavedCharts: Space[] = [
         isPrivate: false,
         dashboards: [],
         access: [],
+        groupsAccess: [],
     },
 ];
 
@@ -363,6 +365,7 @@ export const lightdashConfigWithNoSMTP: Pick<
     query: {
         maxLimit: 100,
         csvCellsLimit: 100,
+        timezone: undefined,
     },
 };
 
