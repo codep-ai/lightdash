@@ -20,37 +20,64 @@ const SIDEBAR_MAX_WIDTH = 600;
 
 const SIDEBAR_RESIZE_HANDLE_WIDTH = 6;
 
+export enum SidebarPosition {
+    LEFT = 'left',
+    RIGHT = 'right',
+}
+
+export type SidebarWidthProps = {
+    defaultWidth?: number;
+    minWidth?: number;
+    maxWidth?: number;
+};
+
 type Props = {
     isOpen?: boolean;
     containerProps?: FlexProps;
     cardProps?: CardProps;
+    position?: SidebarPosition;
+    widthProps?: SidebarWidthProps;
+    mainWidth?: number;
 };
 
 const Sidebar: FC<React.PropsWithChildren<Props>> = ({
     isOpen = true,
     containerProps,
     cardProps,
+    position = SidebarPosition.LEFT,
+    widthProps = {},
+    mainWidth,
     children,
 }) => {
+    const {
+        defaultWidth = SIDEBAR_DEFAULT_WIDTH,
+        minWidth = SIDEBAR_MIN_WIDTH,
+        maxWidth = SIDEBAR_MAX_WIDTH,
+    } = widthProps;
     const { sidebarRef, sidebarWidth, isResizing, startResizing } =
         useSidebarResize({
-            defaultWidth: SIDEBAR_DEFAULT_WIDTH,
-            minWidth: SIDEBAR_MIN_WIDTH,
-            maxWidth: SIDEBAR_MAX_WIDTH,
+            defaultWidth,
+            minWidth,
+            maxWidth,
+            position,
+            mainWidth,
         });
 
     const transition: MantineTransition = {
         in: {
             opacity: 1,
-            marginLeft: 0,
+            ...(position === SidebarPosition.LEFT
+                ? { marginLeft: 0 }
+                : { marginRight: 0 }),
         },
         out: {
             opacity: 0,
-            marginLeft: -sidebarWidth,
+            ...(position === SidebarPosition.LEFT
+                ? { marginLeft: -sidebarWidth }
+                : { marginRight: -sidebarWidth }),
         },
         transitionProperty: 'opacity, margin',
     };
-
     return (
         <TrackSection name={SectionName.SIDEBAR}>
             <Flex
@@ -87,7 +114,9 @@ const Sidebar: FC<React.PropsWithChildren<Props>> = ({
                                 w={SIDEBAR_RESIZE_HANDLE_WIDTH}
                                 pos="absolute"
                                 top={0}
-                                right={-SIDEBAR_RESIZE_HANDLE_WIDTH}
+                                {...(position === SidebarPosition.LEFT
+                                    ? { right: -SIDEBAR_RESIZE_HANDLE_WIDTH }
+                                    : { left: -SIDEBAR_RESIZE_HANDLE_WIDTH })}
                                 onMouseDown={startResizing}
                                 {...cardProps}
                                 sx={(theme) => ({

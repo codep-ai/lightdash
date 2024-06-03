@@ -1,3 +1,215 @@
+# [0.1117.0](https://github.com/lightdash/lightdash/compare/0.1116.1...0.1117.0) (2024-06-03)
+
+
+### Features
+
+* add loading state when catalog is loading ([#10273](https://github.com/lightdash/lightdash/issues/10273)) ([c655847](https://github.com/lightdash/lightdash/commit/c65584723ee037b52d0e427121902c1327bd1f2f))
+
+## [0.1116.1](https://github.com/lightdash/lightdash/compare/0.1116.0...0.1116.1) (2024-05-31)
+
+
+### Bug Fixes
+
+* missing time interval dimensions in joined tables ([#10282](https://github.com/lightdash/lightdash/issues/10282)) ([8b27a33](https://github.com/lightdash/lightdash/commit/8b27a3327a2d5a43dae5015b99ddc8f0662c5fd4))
+
+# [0.1116.0](https://github.com/lightdash/lightdash/compare/0.1115.5...0.1116.0) (2024-05-31)
+
+
+### Features
+
+* rename YML group properties ([#10279](https://github.com/lightdash/lightdash/issues/10279)) ([a53237e](https://github.com/lightdash/lightdash/commit/a53237e08560102975c5e6ce1f06960ea054623e))
+
+## [0.1115.5](https://github.com/lightdash/lightdash/compare/0.1115.4...0.1115.5) (2024-05-31)
+
+
+### Bug Fixes
+
+* catalog explore error ([#10276](https://github.com/lightdash/lightdash/issues/10276)) ([5b5e8e4](https://github.com/lightdash/lightdash/commit/5b5e8e4efed091d89ab0bc842c131d3ed7a2726c))
+
+## [0.1115.4](https://github.com/lightdash/lightdash/compare/0.1115.3...0.1115.4) (2024-05-31)
+
+
+### Bug Fixes
+
+* compile explore with join with fields and groups ([#10275](https://github.com/lightdash/lightdash/issues/10275)) ([58cea9f](https://github.com/lightdash/lightdash/commit/58cea9f5d7fae4edb606c95964d8a0ae71de1c78))
+
+## [0.1115.3](https://github.com/lightdash/lightdash/compare/0.1115.2...0.1115.3) (2024-05-31)
+
+
+### Bug Fixes
+
+* create new group with opposite operator ([#10257](https://github.com/lightdash/lightdash/issues/10257)) ([a32eb24](https://github.com/lightdash/lightdash/commit/a32eb24c6e0fedc81c4c0166025cf6ea48fdaa19))
+* reduce amount of queries necessary to validate dashboards ([#10254](https://github.com/lightdash/lightdash/issues/10254)) ([67db14c](https://github.com/lightdash/lightdash/commit/67db14c6c9601a984c2aa7643b4dca501f207a50))
+* refactor validation error insert ([#10256](https://github.com/lightdash/lightdash/issues/10256)) ([d7fddb2](https://github.com/lightdash/lightdash/commit/d7fddb2737f062b9ebab9e4c33082f328d319c32))
+
+## [0.1115.2](https://github.com/lightdash/lightdash/compare/0.1115.1...0.1115.2) (2024-05-31)
+
+
+### Bug Fixes
+
+* defer state when opening metadata sidebar ([#10265](https://github.com/lightdash/lightdash/issues/10265)) ([1289a6a](https://github.com/lightdash/lightdash/commit/1289a6ae1d9840dfeec09797c04deacd45b74e86))
+
+## [0.1115.1](https://github.com/lightdash/lightdash/compare/0.1115.0...0.1115.1) (2024-05-31)
+
+
+### Bug Fixes
+
+* underlying data with null filter ([#10263](https://github.com/lightdash/lightdash/issues/10263)) ([7af9dec](https://github.com/lightdash/lightdash/commit/7af9dec9d1d6b156320593efde59c81d104def41))
+
+# [0.1115.0](https://github.com/lightdash/lightdash/compare/0.1114.0...0.1115.0) (2024-05-30)
+
+
+### Features
+
+* catalog filters ([#10250](https://github.com/lightdash/lightdash/issues/10250)) ([3e61b46](https://github.com/lightdash/lightdash/commit/3e61b466c93765806494dcc98dc3e0b1dc1ed66c))
+
+# [0.1114.0](https://github.com/lightdash/lightdash/compare/0.1113.2...0.1114.0) (2024-05-30)
+
+
+### Features
+
+* display joined tables in metadata sidebar ([#10225](https://github.com/lightdash/lightdash/issues/10225)) ([26e78d4](https://github.com/lightdash/lightdash/commit/26e78d4bc3cb56ca7c78199a48583d9e75bb0325))
+
+## [0.1113.2](https://github.com/lightdash/lightdash/compare/0.1113.1...0.1113.2) (2024-05-30)
+
+
+### Bug Fixes
+
+* merge charts in analytics and display breadcrumb if within dashboard ([#10252](https://github.com/lightdash/lightdash/issues/10252)) ([bc55822](https://github.com/lightdash/lightdash/commit/bc55822ac0f7ac67351bde356888e638c5abfa79))
+
+## [0.1113.1](https://github.com/lightdash/lightdash/compare/0.1113.0...0.1113.1) (2024-05-30)
+
+
+### Bug Fixes
+
+* refactor charts for validation SQL to use a cte instead of sub query ([#10251](https://github.com/lightdash/lightdash/issues/10251)) ([9c09269](https://github.com/lightdash/lightdash/commit/9c09269eef36c9ead531c7e3fa6a4b100257c183))
+
+# [0.1113.0](https://github.com/lightdash/lightdash/compare/0.1112.1...0.1113.0) (2024-05-30)
+
+
+### Features
+
+* select field in table ([#10233](https://github.com/lightdash/lightdash/issues/10233)) ([e3ee9c5](https://github.com/lightdash/lightdash/commit/e3ee9c5382032a2a84b43111bf81854237c98927))
+
+## [0.1112.1](https://github.com/lightdash/lightdash/compare/0.1112.0...0.1112.1) (2024-05-30)
+
+
+### Bug Fixes
+
+* clear search catalog ([#10244](https://github.com/lightdash/lightdash/issues/10244)) ([0db1be2](https://github.com/lightdash/lightdash/commit/0db1be2420d8251e1ae8186bb33095d533f1e237))
+
+# [0.1112.0](https://github.com/lightdash/lightdash/compare/0.1111.3...0.1112.0) (2024-05-30)
+
+
+### Features
+
+* Allow for nested grouping in group_label meta property ([#10119](https://github.com/lightdash/lightdash/issues/10119)) ([fe5e254](https://github.com/lightdash/lightdash/commit/fe5e25404672821982d13c779b3949a8796fda7b))
+
+## [0.1111.3](https://github.com/lightdash/lightdash/compare/0.1111.2...0.1111.3) (2024-05-30)
+
+
+### Bug Fixes
+
+* add search params when swicthing tab ([#10174](https://github.com/lightdash/lightdash/issues/10174)) ([a73062a](https://github.com/lightdash/lightdash/commit/a73062aca364e631729069853d84457971c70e88))
+
+## [0.1111.2](https://github.com/lightdash/lightdash/compare/0.1111.1...0.1111.2) (2024-05-30)
+
+
+### Bug Fixes
+
+* filter table selection ([#10213](https://github.com/lightdash/lightdash/issues/10213)) ([27bbfea](https://github.com/lightdash/lightdash/commit/27bbfea1352fae5f4d1d719b712146dbe53c2b38))
+
+## [0.1111.1](https://github.com/lightdash/lightdash/compare/0.1111.0...0.1111.1) (2024-05-29)
+
+
+### Bug Fixes
+
+* reduce amount on queries needed to validate charts ([#10226](https://github.com/lightdash/lightdash/issues/10226)) ([4da179b](https://github.com/lightdash/lightdash/commit/4da179b8f2d7a003f8b0808cb56b0003c50a769d))
+
+# [0.1111.0](https://github.com/lightdash/lightdash/compare/0.1110.1...0.1111.0) (2024-05-29)
+
+
+### Features
+
+* polish metadata sidebar  ([#10222](https://github.com/lightdash/lightdash/issues/10222)) ([a2fb7b7](https://github.com/lightdash/lightdash/commit/a2fb7b7f35cfc22738f7d669619ba91a0f485356))
+
+## [0.1110.1](https://github.com/lightdash/lightdash/compare/0.1110.0...0.1110.1) (2024-05-29)
+
+
+### Bug Fixes
+
+* invite user without org ([#10143](https://github.com/lightdash/lightdash/issues/10143)) ([87a1c83](https://github.com/lightdash/lightdash/commit/87a1c830b5b864838aba58a8aeedc7d6b0d8a123))
+
+# [0.1110.0](https://github.com/lightdash/lightdash/compare/0.1109.0...0.1110.0) (2024-05-29)
+
+
+### Features
+
+* catalog field analytics ([#10223](https://github.com/lightdash/lightdash/issues/10223)) ([2bfc554](https://github.com/lightdash/lightdash/commit/2bfc554597903df0f12a13f1d81b478a18d921a1))
+
+# [0.1109.0](https://github.com/lightdash/lightdash/compare/0.1108.1...0.1109.0) (2024-05-29)
+
+
+### Features
+
+* add metadata to right sidebar ([#10219](https://github.com/lightdash/lightdash/issues/10219)) ([097abe0](https://github.com/lightdash/lightdash/commit/097abe0b9c66733ace7d0af98de786a0ff853a77))
+
+## [0.1108.1](https://github.com/lightdash/lightdash/compare/0.1108.0...0.1108.1) (2024-05-29)
+
+
+### Bug Fixes
+
+* duplicated versions chart analytics ([#10227](https://github.com/lightdash/lightdash/issues/10227)) ([9f39f63](https://github.com/lightdash/lightdash/commit/9f39f63ca16c57170b0409a31d6976cd32fbe58c))
+
+# [0.1108.0](https://github.com/lightdash/lightdash/compare/0.1107.0...0.1108.0) (2024-05-28)
+
+
+### Features
+
+* disable custom viz actions ([#10211](https://github.com/lightdash/lightdash/issues/10211)) ([721b575](https://github.com/lightdash/lightdash/commit/721b5752e37bce900044906ac38432e3517137da))
+
+# [0.1107.0](https://github.com/lightdash/lightdash/compare/0.1106.1...0.1107.0) (2024-05-28)
+
+
+### Features
+
+* add catalog chart kind to analytics ([#10220](https://github.com/lightdash/lightdash/issues/10220)) ([2daf9ea](https://github.com/lightdash/lightdash/commit/2daf9ea884d329f9b83bf8b7847589ebbe068165))
+
+## [0.1106.1](https://github.com/lightdash/lightdash/compare/0.1106.0...0.1106.1) (2024-05-28)
+
+
+### Bug Fixes
+
+* show validation error ([#10217](https://github.com/lightdash/lightdash/issues/10217)) ([2739c63](https://github.com/lightdash/lightdash/commit/2739c634e7ec8ada89a81a07a56e34b159105996))
+
+# [0.1106.0](https://github.com/lightdash/lightdash/compare/0.1105.1...0.1106.0) (2024-05-28)
+
+
+### Features
+
+* add right sidebar to page component ([#10212](https://github.com/lightdash/lightdash/issues/10212)) ([38ee604](https://github.com/lightdash/lightdash/commit/38ee604eaae211a32b25d84a56f781de236f3bb8))
+
+## [0.1105.1](https://github.com/lightdash/lightdash/compare/0.1105.0...0.1105.1) (2024-05-28)
+
+
+### Bug Fixes
+
+* allow setting offset to avoid bars overlapping/falling outside of range ([#10162](https://github.com/lightdash/lightdash/issues/10162)) ([cb8bb6f](https://github.com/lightdash/lightdash/commit/cb8bb6f54bcc148058f756b46f02a47d8ea155cc))
+
+# [0.1105.0](https://github.com/lightdash/lightdash/compare/0.1104.3...0.1105.0) (2024-05-28)
+
+
+### Features
+
+* catalog analytics ([#10204](https://github.com/lightdash/lightdash/issues/10204)) ([623932e](https://github.com/lightdash/lightdash/commit/623932e5393a839f0e9fc0c9d66d5cc04359b438))
+
+## [0.1104.3](https://github.com/lightdash/lightdash/compare/0.1104.2...0.1104.3) (2024-05-27)
+
+
+### Bug Fixes
+
+* route slack/events to backend ([#10156](https://github.com/lightdash/lightdash/issues/10156)) ([4a0a0c8](https://github.com/lightdash/lightdash/commit/4a0a0c8af7f25cfe1ec169c48e155abd58b4d84a))
+
 ## [0.1104.2](https://github.com/lightdash/lightdash/compare/0.1104.1...0.1104.2) (2024-05-24)
 
 

@@ -178,11 +178,22 @@ export class ExploreCompiler {
                                 requiredDimensionsForJoin.includes(
                                     dimensionKey,
                                 );
+
+                            const isTimeIntervalBaseDimensionVisible =
+                                dimension.timeInterval &&
+                                dimension.timeIntervalBaseDimensionName &&
+                                join.fields
+                                    ? join.fields.includes(
+                                          dimension.timeIntervalBaseDimensionName,
+                                      )
+                                    : false;
+
                             const isVisible =
                                 join.fields === undefined ||
                                 join.fields.includes(dimensionKey) ||
                                 (dimension.group !== undefined &&
-                                    join.fields.includes(dimension.group));
+                                    join.fields.includes(dimension.group)) ||
+                                isTimeIntervalBaseDimensionVisible;
 
                             if (isRequired || isVisible) {
                                 acc[dimensionKey] = {
@@ -496,7 +507,7 @@ export class ExploreCompiler {
         tables: Record<string, Table>,
     ): { sql: string; tablesReferences: Set<string> } {
         // Dimension might have references to other dimensions
-        // Check we don't reference ourself
+        // Check we don't reference yourself
         const currentRef = `${dimension.table}.${dimension.name}`;
         const currentShortRef = dimension.name;
         let tablesReferences = new Set([dimension.table]);

@@ -3,6 +3,7 @@ import { type FC } from 'react';
 import { Helmet } from 'react-helmet';
 
 import { ProjectType } from '@lightdash/common';
+import { useElementSize } from '@mantine/hooks';
 import { ErrorBoundary } from '../../../features/errorBoundary';
 import { useActiveProjectUuid } from '../../../hooks/useActiveProject';
 import { useProjects } from '../../../hooks/useProjects';
@@ -11,7 +12,7 @@ import { SectionName } from '../../../types/Events';
 import AboutFooter, { FOOTER_HEIGHT, FOOTER_MARGIN } from '../../AboutFooter';
 import { BANNER_HEIGHT, NAVBAR_HEIGHT } from '../../NavBar';
 import { PAGE_HEADER_HEIGHT } from './PageHeader';
-import Sidebar from './Sidebar';
+import Sidebar, { SidebarPosition, type SidebarWidthProps } from './Sidebar';
 
 type StyleProps = {
     withCenteredContent?: boolean;
@@ -24,11 +25,13 @@ type StyleProps = {
     withPaddedContent?: boolean;
     withSidebar?: boolean;
     withSidebarFooter?: boolean;
+    withRightSidebar?: boolean;
     hasBanner?: boolean;
 };
 
 export const PAGE_CONTENT_WIDTH = 900;
-const PAGE_MIN_CONTENT_WIDTH = 600;
+const PAGE_CONTENT_WIDTH_LARGE = 1200;
+export const PAGE_MIN_CONTENT_WIDTH = 600;
 
 const usePageStyles = createStyles<string, StyleProps>((theme, params) => {
     let containerHeight = '100vh';
@@ -56,7 +59,7 @@ const usePageStyles = createStyles<string, StyleProps>((theme, params) => {
                       overflowY: 'auto',
                   }),
 
-            ...(params.withSidebar
+            ...(params.withSidebar || params.withRightSidebar
                 ? {
                       display: 'flex',
                       flexDirection: 'row',
@@ -71,7 +74,7 @@ const usePageStyles = createStyles<string, StyleProps>((theme, params) => {
             width: '100%',
             minWidth: PAGE_CONTENT_WIDTH,
 
-            ...(params.withSidebar
+            ...(params.withSidebar || params.withRightSidebar
                 ? {
                       minWidth: PAGE_MIN_CONTENT_WIDTH,
                   }
@@ -113,6 +116,12 @@ const usePageStyles = createStyles<string, StyleProps>((theme, params) => {
                   }
                 : {}),
 
+            ...(params.withRightSidebar
+                ? {
+                      width: PAGE_CONTENT_WIDTH_LARGE,
+                  }
+                : {}),
+
             ...(params.withPaddedContent
                 ? {
                       paddingLeft: theme.spacing.lg,
@@ -135,6 +144,9 @@ type Props = {
     title?: string;
     sidebar?: React.ReactNode;
     isSidebarOpen?: boolean;
+    rightSidebar?: React.ReactNode;
+    isRightSidebarOpen?: boolean;
+    rightSidebarWidthProps?: SidebarWidthProps;
     header?: React.ReactNode;
 } & Omit<StyleProps, 'withSidebar' | 'withHeader'>;
 
@@ -143,6 +155,9 @@ const Page: FC<React.PropsWithChildren<Props>> = ({
     header,
     sidebar,
     isSidebarOpen = true,
+    rightSidebar,
+    isRightSidebarOpen = false,
+    rightSidebarWidthProps,
 
     withCenteredContent = false,
     withFitContent = false,
@@ -155,6 +170,7 @@ const Page: FC<React.PropsWithChildren<Props>> = ({
 
     children,
 }) => {
+    const { ref: mainRef, width: mainWidth } = useElementSize();
     const { activeProjectUuid } = useActiveProjectUuid({
         refetchOnMount: true,
     });
@@ -177,6 +193,7 @@ const Page: FC<React.PropsWithChildren<Props>> = ({
             withPaddedContent,
             withSidebar: !!sidebar,
             withSidebarFooter,
+            withRightSidebar: !!rightSidebar,
             hasBanner: isCurrentProjectPreview,
         },
         { name: 'Page' },
@@ -202,7 +219,7 @@ const Page: FC<React.PropsWithChildren<Props>> = ({
                     </Sidebar>
                 ) : null}
 
-                <Box component="main" className={classes.content}>
+                <Box component="main" className={classes.content} ref={mainRef}>
                     <TrackSection name={SectionName.PAGE_CONTENT}>
                         <ErrorBoundary wrapper={{ mt: '4xl' }}>
                             {children}
@@ -210,8 +227,20 @@ const Page: FC<React.PropsWithChildren<Props>> = ({
                     </TrackSection>
                 </Box>
 
-                {withFooter && !withSidebarFooter ? <AboutFooter /> : null}
+                {rightSidebar ? (
+                    <Sidebar
+                        isOpen={isRightSidebarOpen}
+                        position={SidebarPosition.RIGHT}
+                        widthProps={rightSidebarWidthProps}
+                        mainWidth={mainWidth}
+                    >
+                        <ErrorBoundary wrapper={{ mt: '4xl' }}>
+                            {rightSidebar}
+                        </ErrorBoundary>
+                    </Sidebar>
+                ) : null}
             </Box>
+            {withFooter && !withSidebarFooter ? <AboutFooter /> : null}
         </>
     );
 };

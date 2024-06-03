@@ -1,12 +1,22 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
+import { PAGE_MIN_CONTENT_WIDTH } from '../components/common/Page/Page';
+import { SidebarPosition } from '../components/common/Page/Sidebar';
 
 type Args = {
     defaultWidth: number;
     minWidth: number;
     maxWidth: number;
+    position: SidebarPosition;
+    mainWidth?: number;
 };
 
-const useSidebarResize = ({ maxWidth, minWidth, defaultWidth }: Args) => {
+const useSidebarResize = ({
+    maxWidth,
+    minWidth,
+    defaultWidth,
+    position,
+    mainWidth,
+}: Args) => {
     const sidebarRef = useRef<HTMLDivElement>(null);
     const [isResizing, setIsResizing] = useState(false);
     const [sidebarWidth, setSidebarWidth] = useState(defaultWidth);
@@ -25,12 +35,24 @@ const useSidebarResize = ({ maxWidth, minWidth, defaultWidth }: Args) => {
             if (!isResizing || !sidebarRef.current) return;
             event.preventDefault();
 
-            const newWidth =
-                event.clientX - sidebarRef.current.getBoundingClientRect().left;
+            const sidebarRect = sidebarRef.current.getBoundingClientRect();
+            let newWidth;
+
+            if (position === SidebarPosition.LEFT) {
+                newWidth = event.clientX - sidebarRect.left;
+            } else {
+                newWidth = sidebarRect.right - event.clientX;
+                if (mainWidth && mainWidth < PAGE_MIN_CONTENT_WIDTH) {
+                    // Allow shrinking but prevent growing when mainWidth < PAGE_MIN_CONTENT_WIDTH
+                    if (newWidth > sidebarRect.width) {
+                        return;
+                    }
+                }
+            }
 
             setSidebarWidth(Math.min(maxWidth, Math.max(minWidth, newWidth)));
         },
-        [isResizing, minWidth, maxWidth],
+        [isResizing, position, maxWidth, minWidth, mainWidth],
     );
 
     useLayoutEffect(() => {

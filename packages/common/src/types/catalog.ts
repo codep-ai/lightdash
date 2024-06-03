@@ -1,5 +1,5 @@
 import assertUnreachable from '../utils/assertUnreachable';
-import { type InlineError } from './explore';
+import { type CompiledExploreJoin, type InlineError } from './explore';
 import {
     DimensionType,
     MetricType,
@@ -8,12 +8,19 @@ import {
     type Dimension,
     type Field,
 } from './field';
+import { type ChartSummary } from './savedCharts';
 import { type TableBase } from './table';
 
 export enum CatalogType {
     Table = 'table',
     Field = 'field',
 }
+
+export type CatalogSelection = {
+    group: string;
+    table?: string;
+    field?: string;
+};
 
 export type ApiCatalogSearch = {
     search?: string;
@@ -26,6 +33,9 @@ export type CatalogField = Pick<
     Pick<Dimension, 'requiredAttributes'> & {
         type: CatalogType.Field;
         basicType?: string; // string, number, timestamp... used in metadata
+        tableName: string;
+        tableGroupLabel?: string;
+        tags?: string[]; // Tags from table, for filtering
     };
 
 export type CatalogTable = Pick<
@@ -35,6 +45,8 @@ export type CatalogTable = Pick<
     errors?: InlineError[]; // For explore errors
     type: CatalogType.Table;
     groupLabel?: string;
+    tags?: string[];
+    joinedTables?: CompiledExploreJoin[]; // Matched type in explore
 };
 
 export type CatalogItem = CatalogField | CatalogTable;
@@ -47,8 +59,23 @@ export type CatalogMetadata = {
     modelName: string;
     source: string | undefined;
     fields: CatalogField[];
+    joinedTables: string[];
 };
 export type ApiCatalogMetadataResults = CatalogMetadata;
+
+export type CatalogAnalytics = {
+    charts: Pick<
+        ChartSummary,
+        | 'uuid'
+        | 'name'
+        | 'spaceUuid'
+        | 'spaceName'
+        | 'dashboardName'
+        | 'dashboardUuid'
+        | 'chartKind'
+    >[];
+};
+export type ApiCatalogAnalyticsResults = CatalogAnalytics;
 
 export const getBasicType = (
     field: CompiledDimension | CompiledMetric,

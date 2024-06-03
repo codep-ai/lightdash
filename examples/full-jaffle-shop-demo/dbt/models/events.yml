@@ -1,6 +1,11 @@
 version: 2
 models:
   - name: events
+    meta:
+      group_details:
+        events:
+          label: Events
+          description: Events that happened in the Jaffle Shop
     columns:
       - name: timestamp_tz
         description: ""
@@ -54,7 +59,7 @@ models:
         meta:
           dimension:
             type: string
-            group_label: 'Events'
+            groups: ['events']
           metrics:
             count:
               type: count
@@ -63,7 +68,7 @@ models:
         meta:
           dimension:
             type: number
-            group_label: 'Events'
+            groups: ['events']
           metrics:
             in_gbp:
               type: sum
@@ -121,11 +126,11 @@ models:
             percentile_75:
               type: percentile
               percentile: 75
-            median: 
+            median:
               type: median
             with_filters:
               type: sum
               filters:
-              - event_id: "!null"
-              - event_id: ">5"
-              - event: "song_played"
+                - event_id: "!null"
+                - event_id: ">5"
+                - event: "song_played"
