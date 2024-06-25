@@ -160,6 +160,7 @@ export interface CustomFormat {
     compact?: CompactOrAlias | undefined;
     prefix?: string | undefined;
     suffix?: string | undefined;
+    timeInterval?: TimeFrames;
 }
 
 export enum CustomFormatType {
@@ -168,6 +169,8 @@ export enum CustomFormatType {
     CURRENCY = 'currency',
     NUMBER = 'number',
     ID = 'id',
+    DATE = 'date',
+    TIMESTAMP = 'timestamp',
 }
 
 export enum TableCalculationType {
@@ -483,21 +486,34 @@ export const friendlyName = (text: string): string => {
     if (text === '') {
         return '';
     }
-    const normalisedText =
-        text === text.toUpperCase() ? text.toLowerCase() : text; // force all uppercase to all lowercase
-    const [first, ...rest] =
-        normalisedText.match(/[0-9]*[A-Za-z][a-z]*|[0-9]+/g) || [];
-    if (!first) {
-        return text;
-    }
-    return [
-        capitalize(first.toLowerCase()),
-        ...rest.map((word) => word.toLowerCase()),
-    ].join(' ');
-};
 
-export const intervalGroupFriendlyName = (text: string): string => {
-    const words = friendlyName(text).split(' ');
-    words.pop();
-    return words.join(' ');
+    // Split the text on underscores, filter out empty parts resulting from leading/trailing underscores
+    const parts = text.split('_').filter((part) => part !== '');
+
+    // Normalize and capitalize each part of the split text
+    const normalizedParts = parts.map((part) => {
+        // Convert part to lowercase if it is entirely uppercase, otherwise leave it as is
+        const normalisedText =
+            part === part.toUpperCase() ? part.toLowerCase() : part;
+
+        // Use a regex to separate numeric and alphabetic sequences
+        // The match array will contain the first matched part and any subsequent ones
+        const [first, ...rest] =
+            normalisedText.match(/[0-9]*[A-Za-z][a-z]*|[0-9]+/g) || [];
+
+        // If no match was found, return the part as is
+        if (!first) {
+            return part;
+        }
+
+        // Capitalize the first matched part, convert the rest to lowercase, and join them with spaces
+        return [
+            capitalize(first.toLowerCase()),
+            ...rest.map((word) => word.toLowerCase()),
+        ].join(' ');
+    });
+
+    // Join the normalized parts with spaces and capitalize the first letter of the resulting string
+    const result = normalizedParts.join(' ');
+    return capitalize(result);
 };

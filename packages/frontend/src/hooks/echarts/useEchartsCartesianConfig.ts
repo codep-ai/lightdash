@@ -18,6 +18,7 @@ import {
     isCustomSqlDimension,
     isDimension,
     isField,
+    isMetric,
     isPivotReferenceWithValues,
     isTableCalculation,
     isTimeInterval,
@@ -621,6 +622,7 @@ const getPivotSeries = ({
                     itemsMap[series.encode.yRef.field] && {
                         formatter: (value: any) => {
                             const field = itemsMap[series.encode.yRef.field];
+
                             if (isCustomDimension(field)) {
                                 return value;
                             }
@@ -630,13 +632,18 @@ const getPivotSeries = ({
                                     value?.value?.[yFieldHash],
                                 );
                             } else {
-                                return applyCustomFormat(
-                                    value?.value?.[yFieldHash],
+                                const defaultFormatOptions =
                                     getCustomFormatFromLegacy({
                                         format: field.format,
                                         round: field.round,
                                         compact: field.compact,
-                                    }),
+                                    });
+                                const formatOptions = isMetric(field)
+                                    ? field.formatOptions
+                                    : undefined;
+                                return applyCustomFormat(
+                                    value?.value?.[yFieldHash],
+                                    formatOptions || defaultFormatOptions,
                                 );
                             }
                         },
@@ -733,13 +740,18 @@ const getSimpleSeries = ({
                                 value?.value?.[yFieldHash],
                             );
                         } else {
-                            return applyCustomFormat(
-                                value?.value?.[yFieldHash],
+                            const defaultFormatOptions =
                                 getCustomFormatFromLegacy({
                                     format: field.format,
                                     round: field.round,
                                     compact: field.compact,
-                                }),
+                                });
+                            const formatOptions = isMetric(field)
+                                ? field.formatOptions
+                                : undefined;
+                            return applyCustomFormat(
+                                value?.value?.[yFieldHash],
+                                formatOptions || defaultFormatOptions,
                             );
                         }
                     },
@@ -1549,6 +1561,7 @@ const useEchartsCartesianConfig = (
         resultsData,
         itemsMap,
         getSeriesColor,
+        minimal,
     } = useVisualizationContext();
 
     const validCartesianConfig = useMemo(() => {
@@ -1866,7 +1879,7 @@ const useEchartsCartesianConfig = (
             yAxis: axes.yAxis,
             useUTC: true,
             series: stackedSeriesWithColorAssignments,
-            animation: !isInDashboard,
+            animation: !(isInDashboard || minimal),
             legend: mergeLegendSettings(
                 validCartesianConfig?.eChartsConfig.legend,
                 validCartesianConfigLegend,
@@ -1891,6 +1904,7 @@ const useEchartsCartesianConfig = (
             axes.yAxis,
             stackedSeriesWithColorAssignments,
             isInDashboard,
+            minimal,
             validCartesianConfig?.eChartsConfig.legend,
             validCartesianConfig?.eChartsConfig.grid,
             validCartesianConfigLegend,

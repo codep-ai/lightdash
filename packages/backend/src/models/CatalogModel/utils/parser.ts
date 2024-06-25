@@ -16,6 +16,7 @@ const parseFieldFromMetricOrDimension = (
     tags: string[],
 ): CatalogField => ({
     name: field.name,
+    label: field.label,
     description: field.description,
     tableLabel: field.tableLabel,
     tableName: table.name,
@@ -47,6 +48,7 @@ export const parseCatalog = (
     if (dbCatalog.type === CatalogType.Table) {
         return {
             name: dbCatalog.name,
+            label: dbCatalog.explore.label,
             groupLabel: dbCatalog.explore.groupLabel,
             description: dbCatalog.description || undefined,
             type: CatalogType.Table,

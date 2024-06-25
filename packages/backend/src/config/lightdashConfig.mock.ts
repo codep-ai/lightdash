@@ -66,6 +66,11 @@ export const lightdashConfigMock: LightdashConfig = {
         podName: undefined,
         nodeName: undefined,
     },
+    prometheus: {
+        enabled: false,
+        port: 9090,
+        path: '/metrics',
+    },
     chart: { versionHistory: { daysLimit: 0 } },
     customVisualizations: { enabled: false },
     database: {
@@ -107,6 +112,7 @@ export const lightdashConfigMock: LightdashConfig = {
     sentry: {
         backend: {
             dsn: '',
+            securityReportUri: '',
         },
         frontend: {
             dsn: '',
@@ -136,5 +142,11 @@ export const lightdashConfigMock: LightdashConfig = {
         maxLimit: 5000,
         csvCellsLimit: 100000,
         timezone: undefined,
+    },
+    security: {
+        contentSecurityPolicy: {
+            reportOnly: false,
+            allowedDomains: [],
+        },
     },
 };

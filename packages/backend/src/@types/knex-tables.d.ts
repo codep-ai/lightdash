@@ -1,6 +1,8 @@
 import {
     DashboardsTableName,
     DashboardTable,
+    DashboardTabsTable,
+    DashboardTabsTableName,
     DashboardTileChartTable,
     DashboardTileChartTableName,
     DashboardTileLoomsTable,
@@ -105,6 +107,7 @@ import { ShareTable, ShareTableName } from '../database/entities/share';
 import {
     DbSlackAuthTokens,
     SlackAuthTokensTable,
+    SlackAuthTokensTableName,
 } from '../database/entities/slackAuthentication';
 import {
     SpaceTable,
@@ -235,7 +238,7 @@ declare module 'knex/types/tables' {
         [DbtCloudIntegrationsTableName]: DbtCloudIntegrationsTable;
         [ShareTableName]: ShareTable;
         [SpaceUserAccessTableName]: SpaceUserAccessTable;
-        [SlackAuthTokensTable]: DbSlackAuthTokens;
+        [SlackAuthTokensTableName]: SlackAuthTokensTable;
         [AnalyticsChartViewsTableName]: DbAnalyticsChartViews;
         [AnalyticsDashboardViewsTableName]: DbAnalyticsDashboardViews;
         [PinnedListTableName]: PinnedListTable;
@@ -261,6 +264,7 @@ declare module 'knex/types/tables' {
         [DownloadFileTableName]: DownloadFileTable;
         [GithubAppInstallationTableName]: GithubAppInstallationTable;
         [DashboardTileCommentsTableName]: DashboardTileCommentsTable;
+        [DashboardTabsTableName]: DashboardTabsTable;
         [NotificationsTableName]: NotificationsTable;
         [CatalogTableName]: CatalogTable;
     }

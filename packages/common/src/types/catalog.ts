@@ -28,7 +28,7 @@ export type ApiCatalogSearch = {
 };
 export type CatalogField = Pick<
     Field,
-    'name' | 'fieldType' | 'tableLabel' | 'description'
+    'name' | 'label' | 'fieldType' | 'tableLabel' | 'description'
 > &
     Pick<Dimension, 'requiredAttributes'> & {
         type: CatalogType.Field;
@@ -40,7 +40,7 @@ export type CatalogField = Pick<
 
 export type CatalogTable = Pick<
     TableBase,
-    'name' | 'groupLabel' | 'description' | 'requiredAttributes'
+    'name' | 'label' | 'groupLabel' | 'description' | 'requiredAttributes'
 > & {
     errors?: InlineError[]; // For explore errors
     type: CatalogType.Table;

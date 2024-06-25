@@ -26,7 +26,8 @@ const handleError = (err: any): ApiError => {
         error: {
             name: 'NetworkError',
             statusCode: 500,
-            message: `Could not connect to Lightdash server. The server may have crashed or be running on an incorrect host and port configuration.`,
+            message:
+                'We are currently unable to reach the Lightdash server. Please try again in a few moments.',
             data: err,
         },
     };
@@ -44,26 +45,24 @@ export const lightdashApi = async <T extends ApiResponse['results']>({
     body,
     headers,
 }: LightdashApiProps): Promise<T> => {
+    let sentryTrace: string | undefined;
     // Manually create a span for the fetch request to be able to trace it in Sentry. This also enables Distributed Tracing.
-    const activeTransaction = Sentry.getActiveTransaction();
-
-    let sentryTrace = undefined;
-    if (activeTransaction) {
-        const span = activeTransaction.startChild({
-            data: {
+    Sentry.startSpan(
+        {
+            op: 'http.client',
+            name: `API Request: ${method} ${url}`,
+            attributes: {
+                'http.method': method,
+                'http.url': url,
                 type: 'fetch',
                 url,
                 method,
             },
-            op: 'http.client',
-            name: `API Request: ${method} ${url}`,
-        });
-        span.setAttributes({
-            'http.method': method,
-            'http.url': url,
-        });
-        sentryTrace = span.toTraceparent();
-    }
+        },
+        (s) => {
+            sentryTrace = Sentry.spanToTraceHeader(s);
+        },
+    );
 
     return fetch(`${apiPrefix}${url}`, {
         method,

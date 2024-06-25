@@ -7,13 +7,11 @@ import {
     CatalogTable,
     CatalogType,
     ChartSummary,
-    CompiledTable,
     Explore,
     ExploreError,
     ForbiddenError,
-    getBasicType,
     hasIntersection,
-    isDimension,
+    InlineErrorType,
     isExploreError,
     SessionUser,
     SummaryExplore,
@@ -130,10 +128,20 @@ export class CatalogService<
             await this.projectModel.getTablesConfiguration(projectUuid);
         return explores.reduce<CatalogTable[]>((acc, explore) => {
             if (isExploreError(explore)) {
+                // If no dimensions found, we don't show the explore error
+                if (
+                    explore.errors.every(
+                        (error) =>
+                            error.type === InlineErrorType.NO_DIMENSIONS_FOUND,
+                    )
+                )
+                    return acc;
+
                 return [
                     ...acc,
                     {
                         name: explore.name,
+                        label: explore.label,
                         errors: explore.errors,
                         groupLabel: explore.groupLabel,
                         description:
@@ -155,6 +163,7 @@ export class CatalogService<
                     ...acc,
                     {
                         name: explore.name,
+                        label: explore.label,
                         description:
                             explore.tables[explore.baseTable].description,
                         type: CatalogType.Table,
@@ -257,6 +266,16 @@ export class CatalogService<
         const filteredExplores = explores.reduce<(Explore | ExploreError)[]>(
             (acc, explore) => {
                 if (isExploreError(explore)) {
+                    // If no dimensions found, we don't show the explore error
+                    if (
+                        explore.errors.every(
+                            (error) =>
+                                error.type ===
+                                InlineErrorType.NO_DIMENSIONS_FOUND,
+                        )
+                    )
+                        return acc;
+
                     return [...acc, explore];
                 }
                 if (
@@ -336,6 +355,7 @@ export class CatalogService<
                 (joinedTable) => joinedTable.table,
             ),
         };
+
         return metadata;
     }
 
@@ -346,26 +366,23 @@ export class CatalogService<
     ) => {
         // TODO move to space utils ?
         const spaces = await this.spaceModel.find({ projectUuid });
+        const spacesAccess = await this.spaceModel.getUserSpacesAccess(
+            user.userUuid,
+            spaces.map((s) => s.uuid),
+        );
 
-        const hasSpaceAccess = await Promise.all(
-            spaces.map(async (space) =>
+        const allowedSpaceUuids = spaces
+            .filter((space) =>
                 user.ability.can(
                     'view',
                     subject('Space', {
                         organizationUuid: space.organizationUuid,
                         projectUuid,
                         isPrivate: space.isPrivate,
-                        access: await this.spaceModel.getUserSpaceAccess(
-                            user.userUuid,
-                            space.uuid,
-                        ),
+                        access: spacesAccess[space.uuid] ?? [],
                     }),
                 ),
-            ),
-        );
-
-        const allowedSpaceUuids = spaces
-            .filter((_, index) => hasSpaceAccess[index])
+            )
             .map(({ uuid }) => uuid);
 
         return chatSummaries.filter((chart) =>

@@ -1,9 +1,5 @@
 import { subject } from '@casl/ability';
-import {
-    FeatureFlags,
-    type Dashboard,
-    type SpaceSummary,
-} from '@lightdash/common';
+import { type Dashboard, type SpaceSummary } from '@lightdash/common';
 import {
     ActionIcon,
     Box,
@@ -41,11 +37,14 @@ import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 import { useHistory, useLocation, useParams } from 'react-router-dom';
 import { useToggle } from 'react-use';
+import { PromotionConfirmDialog } from '../../../features/promotion/components/PromotionConfirmDialog';
+import {
+    usePromoteDashboardDiffMutation,
+    usePromoteDashboardMutation,
+} from '../../../features/promotion/hooks/usePromoteDashboard';
 import { DashboardSchedulersModal } from '../../../features/scheduler';
 import { getSchedulerUuidFromUrlParams } from '../../../features/scheduler/utils';
-import { useFeatureFlagEnabled } from '../../../hooks/useFeatureFlagEnabled';
 import { useProject } from '../../../hooks/useProject';
-import { usePromoteDashboardMutation } from '../../../hooks/usePromoteDashboard';
 import { useApp } from '../../../providers/AppProvider';
 import { useTracking } from '../../../providers/TrackingProvider';
 import { EventName } from '../../../types/Events';
@@ -132,6 +131,12 @@ const DashboardHeader = ({
         track({ name: EventName.UPDATE_DASHBOARD_NAME_CLICKED });
     };
     const { mutate: promoteDashboard } = usePromoteDashboardMutation();
+    const {
+        mutate: getPromoteDashboardDiff,
+        data: promoteDashboardDiff,
+        reset: resetPromoteDashboardDiff,
+        isLoading: promoteDashboardDiffLoading,
+    } = usePromoteDashboardDiffMutation();
 
     useEffect(() => {
         const schedulerUuidFromUrlParams =
@@ -166,18 +171,14 @@ const DashboardHeader = ({
             projectUuid,
         }),
     );
-    const isPromoteChartsEnabled = useFeatureFlagEnabled(
-        FeatureFlags.PromoteCharts,
+
+    const userCanPromoteDashboard = user.data?.ability?.can(
+        'promote',
+        subject('Dashboard', {
+            organizationUuid,
+            projectUuid,
+        }),
     );
-    const userCanPromoteDashboard =
-        isPromoteChartsEnabled &&
-        user.data?.ability?.can(
-            'promote',
-            subject('Dashboard', {
-                organizationUuid,
-                projectUuid,
-            }),
-        );
 
     return (
         <PageHeader
@@ -574,7 +575,7 @@ const DashboardHeader = ({
                                                     />
                                                 }
                                                 onClick={() =>
-                                                    promoteDashboard(
+                                                    getPromoteDashboardDiff(
                                                         dashboardUuid,
                                                     )
                                                 }
@@ -637,6 +638,19 @@ const DashboardHeader = ({
                                 toggleScheduledDeliveriesModal(false)
                             }
                         />
+                    )}
+                    {(promoteDashboardDiff || promoteDashboardDiffLoading) && (
+                        <PromotionConfirmDialog
+                            type="dashboard"
+                            resourceName={dashboard.name}
+                            promotionChanges={promoteDashboardDiff}
+                            onClose={() => {
+                                resetPromoteDashboardDiff();
+                            }}
+                            onConfirm={() => {
+                                promoteDashboard(dashboardUuid);
+                            }}
+                        ></PromotionConfirmDialog>
                     )}
                 </PageActionsContainer>
             )}

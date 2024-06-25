@@ -23,6 +23,7 @@ describe('Lightdash catalog all tables and fields', () => {
             );
             expect(userTable).to.eql({
                 name: 'users',
+                label: 'Users',
                 description: 'users table',
                 type: 'table',
                 joinedTables: [],
@@ -49,7 +50,7 @@ describe('Lightdash catalog all tables and fields', () => {
                 description: 'Method of payment used, for example credit card',
                 tableLabel: 'Payments',
                 tableName: 'payments',
-
+                label: 'Payment method',
                 fieldType: 'dimension',
                 basicType: 'string',
                 type: 'field',
@@ -68,6 +69,7 @@ describe('Lightdash catalog all tables and fields', () => {
                 tableName: 'payments',
                 fieldType: 'metric',
                 basicType: 'number',
+                label: 'Total revenue',
                 type: 'field',
                 tags: [],
             });
@@ -93,6 +95,7 @@ describe('Lightdash catalog search', () => {
 
             expect(table).to.eql({
                 name: 'customers',
+                label: 'Customers',
                 description:
                     "# Customers\n\nThis table has basic information about a customer, as well as some derived\nfacts based on a customer's orders\n",
                 type: 'table',
@@ -105,6 +108,7 @@ describe('Lightdash catalog search', () => {
 
             expect(field).to.eql({
                 name: 'customer_id',
+                label: 'Customer id',
                 tableLabel: 'Users',
                 tableName: 'users',
                 description: 'This is a unique identifier for a customer',
@@ -132,7 +136,7 @@ describe('Lightdash catalog search', () => {
                 description: 'Method of payment used, for example credit card',
                 tableLabel: 'Payments',
                 tableName: 'payments',
-
+                label: 'Payment method',
                 fieldType: 'dimension',
                 basicType: 'string',
                 type: 'field',
@@ -155,7 +159,7 @@ describe('Lightdash catalog search', () => {
                 description: 'Sum of all payments',
                 tableLabel: 'Payments',
                 tableName: 'payments',
-
+                label: 'Total revenue',
                 fieldType: 'metric',
                 basicType: 'number',
                 type: 'field',
@@ -183,7 +187,7 @@ describe('Lightdash catalog search', () => {
                 name: 'customer_id',
                 tableLabel: 'Users',
                 tableName: 'users',
-
+                label: 'Customer id',
                 description: 'This is a unique identifier for a customer',
                 type: 'field',
                 basicType: 'number',
@@ -197,6 +201,7 @@ describe('Lightdash catalog search', () => {
             );
             expect(matchingTable).to.eql({
                 name: 'customers',
+                label: 'Customers',
                 description:
                     "# Customers\n\nThis table has basic information about a customer, as well as some derived\nfacts based on a customer's orders\n",
                 type: 'table',
@@ -220,7 +225,7 @@ describe('Lightdash catalog search', () => {
                 name: 'date_of_first_order',
                 tableLabel: 'Orders',
                 tableName: 'orders',
-
+                label: 'Date of first order',
                 description: 'Min of Order date',
                 type: 'field',
                 basicType: 'number',

@@ -1,9 +1,11 @@
 import { ParseError, SentryConfig } from '@lightdash/common';
 import { VERSION } from '../version';
 import {
+    getFloatArrayFromEnvironmentVariable,
     getFloatFromEnvironmentVariable,
     getIntegerFromEnvironmentVariable,
     getMaybeBase64EncodedFromEnvironmentVariable,
+    getObjectFromEnvironmentVariable,
     parseConfig,
 } from './parseConfig';
 import {
@@ -50,6 +52,7 @@ test('Should use default sentry configuration if no environment vars', () => {
     const expected: SentryConfig = {
         backend: {
             dsn: '',
+            securityReportUri: '',
         },
         frontend: {
             dsn: '',
@@ -71,6 +74,7 @@ test('Should parse sentry config from env', () => {
     const expected: SentryConfig = {
         backend: {
             dsn: 'mydsnbackend.sentry.io',
+            securityReportUri: '',
         },
         frontend: {
             dsn: 'mydsnfrontend.sentry.io',
@@ -188,5 +192,46 @@ describe('getMaybeBase64EncodedFromEnvironmentVariable', () => {
                 decodeUnlessStartsWith: '-----BEGIN CERTIFICATE-----',
             }),
         ).toEqual('Hey there');
+    });
+});
+
+describe('getFloatArrayFromEnvironmentVariable', () => {
+    test('returns undefined if env var is not defined', () => {
+        expect(getFloatArrayFromEnvironmentVariable('MISSING_ENV_VAR')).toEqual(
+            undefined,
+        );
+    });
+    test('returns array if env var value is valid', () => {
+        process.env.VALID_NUMBER_ARRAY = '1,2.5,3.0';
+        expect(
+            getFloatArrayFromEnvironmentVariable('VALID_NUMBER_ARRAY'),
+        ).toEqual([1, 2.5, 3]);
+    });
+    test('throw error if env var value is invalid', () => {
+        process.env.INVALID_NUMBER_ARRAY = 'abc,1,2';
+        expect(() =>
+            getFloatArrayFromEnvironmentVariable('INVALID_NUMBER_ARRAY'),
+        ).toThrowError(ParseError);
+    });
+});
+
+describe('getObjectFromEnvironmentVariable', () => {
+    test('returns undefined if env var is not defined', () => {
+        expect(getObjectFromEnvironmentVariable('MISSING_ENV_VAR')).toEqual(
+            undefined,
+        );
+    });
+    test('returns object if env var value is valid', () => {
+        process.env.VALID_OBJECT = '{"test":"value", "test2": 2}';
+        expect(getObjectFromEnvironmentVariable('VALID_OBJECT')).toEqual({
+            test: 'value',
+            test2: 2,
+        });
+    });
+    test('throw error if env var value is invalid', () => {
+        process.env.INVALID_OBJECT = 'test="value"';
+        expect(() =>
+            getObjectFromEnvironmentVariable('INVALID_OBJECT'),
+        ).toThrowError(ParseError);
     });
 });

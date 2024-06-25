@@ -1,5 +1,4 @@
 import { createTerminus } from '@godaddy/terminus';
-import { NodeSDK } from '@opentelemetry/sdk-node';
 import * as Sentry from '@sentry/node';
 import express from 'express';
 import http from 'http';
@@ -12,8 +11,8 @@ import {
 import { LightdashConfig } from './config/parseConfig';
 import Logger from './logging/logger';
 import { ModelProviderMap, ModelRepository } from './models/ModelRepository';
+import PrometheusMetrics from './prometheus';
 import { SchedulerWorker } from './scheduler/SchedulerWorker';
-import { registerWorkerMetrics } from './schedulerMetrics';
 import {
     OperationContext,
     ServiceProviderMap,
@@ -26,7 +25,6 @@ type SchedulerAppArguments = {
     lightdashConfig: LightdashConfig;
     port: string | number;
     environment?: 'production' | 'development';
-    otelSdk: NodeSDK;
     serviceProviders?: ServiceProviderMap;
     knexConfig: {
         production: Knex.Config<Knex.PgConnectionConfig>;
@@ -48,14 +46,13 @@ export default class SchedulerApp {
 
     private readonly environment: 'production' | 'development';
 
-    private readonly otelSdk: NodeSDK;
-
     private readonly clients: ClientRepository;
+
+    private readonly prometheusMetrics: PrometheusMetrics;
 
     constructor(args: SchedulerAppArguments) {
         this.lightdashConfig = args.lightdashConfig;
         this.port = args.port;
-        this.otelSdk = args.otelSdk;
         this.environment = args.environment || 'production';
         this.analytics = new LightdashAnalytics({
             lightdashConfig: this.lightdashConfig,
@@ -106,11 +103,16 @@ export default class SchedulerApp {
             clients: this.clients,
             models,
         });
+        this.prometheusMetrics = new PrometheusMetrics(
+            this.lightdashConfig.prometheus,
+        );
     }
 
     public async start() {
+        this.prometheusMetrics.start();
         await this.initSentry();
         const worker = await this.initWorker();
+        this.prometheusMetrics.monitorQueues(this.clients.getSchedulerClient());
         await this.initServer(worker);
     }
 
@@ -150,7 +152,6 @@ export default class SchedulerApp {
                 slackClient: this.clients.getSlackClient(),
             },
         });
-        registerWorkerMetrics(this.clients.getSchedulerClient());
         await worker.run();
         return worker;
     }
@@ -174,14 +175,9 @@ export default class SchedulerApp {
             },
             onSignal: async () => {
                 Logger.debug('SIGTERM signal received: closing HTTP server');
+                this.prometheusMetrics.stop();
                 if (worker && worker.runner) {
                     await worker?.runner?.stop();
-                }
-                try {
-                    await this.otelSdk.shutdown();
-                    Logger.debug('OpenTelemetry SDK has been shutdown');
-                } catch (e) {
-                    Logger.error('Error shutting down OpenTelemetry SDK', e);
                 }
             },
             logger: Logger.error,

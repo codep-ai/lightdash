@@ -2,7 +2,6 @@ import { subject } from '@casl/ability';
 import {
     addDashboardFiltersToMetricQuery,
     AdditionalMetric,
-    AlreadyExistsError,
     AlreadyProcessingError,
     AndFilterGroup,
     ApiChartAndResults,
@@ -20,7 +19,6 @@ import {
     CreateJob,
     CreateProject,
     CreateProjectMember,
-    CreateSavedChart,
     CreateWarehouseCredentials,
     CustomFormatType,
     DashboardAvailableFilters,
@@ -86,7 +84,6 @@ import {
     TablesConfiguration,
     TableSelectionType,
     UnexpectedServerError,
-    UpdatedByUser,
     UpdateMetadata,
     UpdateProject,
     UpdateProjectMember,
@@ -97,7 +94,6 @@ import {
     type ApiCreateProjectResults,
 } from '@lightdash/common';
 import { SshTunnel } from '@lightdash/warehouses';
-import opentelemetry, { SpanStatusCode } from '@opentelemetry/api';
 import * as Sentry from '@sentry/node';
 import * as crypto from 'crypto';
 import * as yaml from 'js-yaml';
@@ -130,11 +126,7 @@ import { buildQuery, CompiledQuery } from '../../queryBuilder';
 import { compileMetricQuery } from '../../queryCompiler';
 import { SchedulerClient } from '../../scheduler/SchedulerClient';
 import { ProjectAdapter } from '../../types';
-import {
-    runWorkerThread,
-    wrapOtelSpan,
-    wrapSentryTransaction,
-} from '../../utils';
+import { runWorkerThread, wrapSentryTransaction } from '../../utils';
 import { BaseService } from '../BaseService';
 import {
     hasDirectAccessToSpace,
@@ -1399,7 +1391,7 @@ export class ProjectService extends BaseService {
         explore?: Explore;
         granularity?: DateGranularity;
     }): Promise<ApiQueryResults> {
-        return wrapOtelSpan(
+        return wrapSentryTransaction(
             'ProjectService.runQueryAndFormatRows',
             {},
             async (span) => {
@@ -1429,41 +1421,30 @@ export class ProjectService extends BaseService {
                 }
 
                 // If there are more than 500 rows, we need to format them in a background job
-                const formattedRows = await wrapOtelSpan(
+                const formattedRows = await wrapSentryTransaction<ResultRow[]>(
                     'ProjectService.runQueryAndFormatRows.formatRows',
                     {
                         rows: rows.length,
                         warehouse: warehouseConnection?.type,
                     },
-                    async (formatRowsSpan) =>
-                        wrapSentryTransaction<ResultRow[]>(
-                            'ProjectService.runQueryAndFormatRows.formatRows',
-                            {
-                                rows: rows.length,
-                                warehouse: warehouseConnection?.type,
-                            },
-                            async () => {
-                                const useWorker = rows.length > 500;
-                                formatRowsSpan.setAttribute(
-                                    'useWorker',
-                                    useWorker,
-                                );
+                    async (formatRowsSpan) => {
+                        const useWorker = rows.length > 500;
+                        formatRowsSpan.setAttribute('useWorker', useWorker);
 
-                                return useWorker
-                                    ? runWorkerThread<ResultRow[]>(
-                                          new Worker(
-                                              './dist/services/ProjectService/formatRows.js',
-                                              {
-                                                  workerData: {
-                                                      rows,
-                                                      itemMap: fields,
-                                                  },
-                                              },
-                                          ),
-                                      )
-                                    : formatRows(rows, fields);
-                            },
-                        ),
+                        return useWorker
+                            ? runWorkerThread<ResultRow[]>(
+                                  new Worker(
+                                      './dist/services/ProjectService/formatRows.js',
+                                      {
+                                          workerData: {
+                                              rows,
+                                              itemMap: fields,
+                                          },
+                                      },
+                                  ),
+                              )
+                            : formatRows(rows, fields);
+                    },
                 );
 
                 return {
@@ -1523,7 +1504,7 @@ export class ProjectService extends BaseService {
         rows: Record<string, any>[];
         cacheMetadata: CacheMetadata;
     }> {
-        return wrapOtelSpan(
+        return wrapSentryTransaction(
             'ProjectService.getResultsFromCacheOrWarehouse',
             {},
             async (span) => {
@@ -1587,7 +1568,7 @@ export class ProjectService extends BaseService {
                 this.logger.debug(
                     `Run query against warehouse warehouse with timezone ${metricQuery.timezone}`,
                 );
-                const warehouseResults = await wrapOtelSpan(
+                const warehouseResults = await wrapSentryTransaction(
                     'runWarehouseQuery',
                     {
                         query,
@@ -1652,9 +1633,9 @@ export class ProjectService extends BaseService {
         cacheMetadata: CacheMetadata;
         fields: ItemsMap;
     }> {
-        const tracer = opentelemetry.trace.getTracer('default');
-        return tracer.startActiveSpan(
+        return wrapSentryTransaction(
             'ProjectService.runMetricQuery',
+            {},
             async (span) => {
                 try {
                     if (!isUserWithOrg(user)) {
@@ -1850,7 +1831,7 @@ export class ProjectService extends BaseService {
                     return { rows, cacheMetadata, fields };
                 } catch (e) {
                     span.setStatus({
-                        code: SpanStatusCode.ERROR,
+                        code: 2, // ERROR
                         message: e.message,
                     });
                     throw e;
@@ -2449,70 +2430,106 @@ export class ProjectService extends BaseService {
         exploreName: string,
         organizationUuid?: string,
     ): Promise<Explore> {
-        const transaction = Sentry.getCurrentHub()
-            ?.getScope()
-            ?.getTransaction();
-        const span = transaction?.startChild({
-            op: 'ProjectService.getExplore',
-            description: 'Gets a single explore from the cache',
-        });
-        try {
-            return await wrapOtelSpan(
-                'ProjectService.getExplore',
-                {},
-                async () => {
-                    const project = organizationUuid
-                        ? { organizationUuid }
-                        : await this.projectModel.getSummary(projectUuid);
-                    if (
-                        user.ability.cannot(
-                            'view',
-                            subject('Project', {
-                                organizationUuid: project.organizationUuid,
-                                projectUuid,
-                            }),
-                        )
-                    ) {
-                        throw new ForbiddenError();
-                    }
-                    const explore = await this.projectModel.getExploreFromCache(
-                        projectUuid,
-                        exploreName,
+        return Sentry.startSpan(
+            {
+                op: 'ProjectService.getExplore',
+                name: 'ProjectService.getExplore',
+            },
+            async () => {
+                const exploresMap = await this.findExplores({
+                    user,
+                    projectUuid,
+                    exploreNames: [exploreName],
+                    organizationUuid,
+                });
+                const explore = exploresMap[exploreName];
+
+                if (!explore) {
+                    throw new NotExistsError(
+                        `Explore "${exploreName}" does not exist.`,
                     );
-
-                    if (isExploreError(explore)) {
-                        throw new NotExistsError(
-                            `Explore "${exploreName}" does not exist.`,
-                        );
-                    }
-
-                    const shouldFilterExplore = await wrapOtelSpan(
-                        'ProjectService.getExplore.shouldFilterExplore',
-                        {},
-                        async () => exploreHasFilteredAttribute(explore),
+                }
+                if (isExploreError(explore)) {
+                    throw new NotExistsError(
+                        `Explore "${exploreName}" has an error.`,
                     );
+                }
+                return explore;
+            },
+        );
+    }
 
-                    if (!shouldFilterExplore) {
-                        return explore;
-                    }
-                    const userAttributes =
-                        await this.userAttributesModel.getAttributeValuesForOrgMember(
-                            {
-                                organizationUuid: project.organizationUuid,
-                                userUuid: user.userUuid,
-                            },
-                        );
-
-                    return wrapOtelSpan(
-                        'ProjectService.getExplore.getFilteredExplore',
-                        {},
-                        async () => getFilteredExplore(explore, userAttributes),
-                    );
+    private async findExplores({
+        user,
+        projectUuid,
+        exploreNames,
+        organizationUuid,
+    }: {
+        user: SessionUser;
+        projectUuid: string;
+        exploreNames: string[];
+        organizationUuid?: string;
+    }): Promise<Record<string, Explore | ExploreError>> {
+        return Sentry.startSpan(
+            {
+                op: 'ProjectService.findExplores',
+                name: 'ProjectService.findExplores',
+                attributes: {
+                    projectUuid,
+                    exploreNames,
+                    organizationUuid,
                 },
-            );
-        } finally {
-            span?.finish();
-        }
+            },
+
+            async () => {
+                const project = organizationUuid
+                    ? { organizationUuid }
+                    : await this.projectModel.getSummary(projectUuid);
+                if (
+                    user.ability.cannot(
+                        'view',
+                        subject('Project', {
+                            organizationUuid: project.organizationUuid,
+                            projectUuid,
+                        }),
+                    )
+                ) {
+                    throw new ForbiddenError();
+                }
+                const explores = await this.projectModel.findExploresFromCache(
+                    projectUuid,
+                    exploreNames,
+                );
+
+                const userAttributes =
+                    await this.userAttributesModel.getAttributeValuesForOrgMember(
+                        {
+                            organizationUuid: project.organizationUuid,
+                            userUuid: user.userUuid,
+                        },
+                    );
+
+                return Object.values(explores).reduce<
+                    Record<string, Explore | ExploreError>
+                >((acc, explore) => {
+                    if (isExploreError(explore)) {
+                        acc[explore.name] = explore;
+                    } else {
+                        const shouldFilterExplore =
+                            exploreHasFilteredAttribute(explore);
+                        if (!shouldFilterExplore) {
+                            acc[explore.name] = explore;
+                        } else {
+                            acc[explore.name] = getFilteredExplore(
+                                explore,
+                                userAttributes,
+                            );
+                        }
+                    }
+                    return acc;
+                }, {});
+            },
+        );
     }
 
     async getCatalog(
@@ -2605,116 +2622,24 @@ export class ProjectService extends BaseService {
         user: SessionUser,
         savedChartUuid: string,
     ): Promise<FilterableDimension[]> {
-        const transaction = Sentry.getCurrentHub()
-            ?.getScope()
-            ?.getTransaction();
-        const span = transaction?.startChild({
-            op: 'projectService.getAvailableFiltersForSavedQuery',
-            description: 'Gets all filters available for a single query',
-        });
-        try {
-            const [savedChart] =
-                await this.savedChartModel.getInfoForAvailableFilters([
-                    savedChartUuid,
-                ]);
+        return Sentry.startSpan(
+            {
+                op: 'projectService.getAvailableFiltersForSavedQuery',
+                name: 'ProjectService.getAvailableFiltersForSavedQuery',
+            },
+            async () => {
+                const [savedChart] =
+                    await this.savedChartModel.getInfoForAvailableFilters([
+                        savedChartUuid,
+                    ]);
 
-            const space = await this.spaceModel.getSpaceSummary(
-                savedChart.spaceUuid,
-            );
-
-            const access = await this.spaceModel.getUserSpaceAccess(
-                user.userUuid,
-                space.uuid,
-            );
-
-            if (
-                user.ability.cannot(
-                    'view',
-                    subject('SavedChart', {
-                        ...savedChart,
-                        isPrivate: space.isPrivate,
-                        access,
-                    }),
-                )
-            ) {
-                throw new ForbiddenError();
-            }
-
-            const explore = await this.getExplore(
-                user,
-                savedChart.projectUuid,
-                savedChart.tableName,
-            );
-
-            return getDimensions(explore).filter(
-                (field) => isFilterableDimension(field) && !field.hidden,
-            );
-        } finally {
-            span?.finish();
-        }
-    }
-
-    async getAvailableFiltersForSavedQueries(
-        user: SessionUser,
-        savedChartUuidsAndTileUuids: SavedChartsInfoForDashboardAvailableFilters,
-    ): Promise<DashboardAvailableFilters> {
-        const transaction = Sentry.getCurrentHub()
-            ?.getScope()
-            ?.getTransaction();
-        const span = transaction?.startChild({
-            op: 'projectService.getAvailableFiltersForSavedQueries',
-            description: 'Gets all filters available for several queries',
-        });
-
-        let allFilters: {
-            uuid: string;
-            filters: CompiledDimension[];
-        }[] = [];
-
-        const savedQueryUuids = savedChartUuidsAndTileUuids.map(
-            ({ savedChartUuid }) => savedChartUuid,
-        );
-
-        try {
-            const savedCharts =
-                await this.savedChartModel.getInfoForAvailableFilters(
-                    savedQueryUuids,
+                const space = await this.spaceModel.getSpaceSummary(
+                    savedChart.spaceUuid,
                 );
-            const uniqueSpaceUuids = [
-                ...new Set(savedCharts.map((chart) => chart.spaceUuid)),
-            ];
-            const exploreCacheKeys: Record<string, boolean> = {};
-            const exploreCache: Record<string, Explore> = {};
 
-            const explorePromises = savedCharts.reduce<
-                Promise<{ key: string; explore: Explore }>[]
-            >((acc, chart) => {
-                const key = chart.tableName;
-                if (!exploreCacheKeys[key]) {
-                    acc.push(
-                        this.getExplore(user, chart.projectUuid, key).then(
-                            (explore) => ({ key, explore }),
-                        ),
-                    );
-                    exploreCacheKeys[key] = true;
-                }
-                return acc;
-            }, []);
-
-            const [spaceAccessMap, resolvedExplores] = await Promise.all([
-                this.spaceModel.getSpacesForAccessCheck(uniqueSpaceUuids),
-                Promise.all(explorePromises),
-            ]);
-
-            resolvedExplores.forEach(({ key, explore }) => {
-                exploreCache[key] = explore;
-            });
-
-            const filterPromises = savedCharts.map(async (savedChart) => {
-                const spaceAccess = spaceAccessMap.get(savedChart.spaceUuid);
                 const access = await this.spaceModel.getUserSpaceAccess(
                     user.userUuid,
-                    savedChart.spaceUuid,
+                    space.uuid,
                 );
 
                 if (
@@ -2722,27 +2647,111 @@ export class ProjectService extends BaseService {
                         'view',
                         subject('SavedChart', {
                             ...savedChart,
-                            isPrivate: spaceAccess?.isPrivate,
+                            isPrivate: space.isPrivate,
                             access,
                         }),
                     )
                 ) {
-                    return { uuid: savedChart.uuid, filters: [] };
+                    throw new ForbiddenError();
                 }
 
-                const explore = exploreCache[savedChart.tableName];
-
-                const filters = getDimensions(explore).filter(
-                    (field) => isFilterableDimension(field) && !field.hidden,
+                const explore = await this.getExplore(
+                    user,
+                    savedChart.projectUuid,
+                    savedChart.tableName,
                 );
 
-                return { uuid: savedChart.uuid, filters };
-            });
+                return getDimensions(explore).filter(
+                    (field) => isFilterableDimension(field) && !field.hidden,
+                );
+            },
+        );
+    }
 
-            allFilters = await Promise.all(filterPromises);
-        } finally {
-            span?.finish();
-        }
+    async getAvailableFiltersForSavedQueries(
+        user: SessionUser,
+        savedChartUuidsAndTileUuids: SavedChartsInfoForDashboardAvailableFilters,
+    ): Promise<DashboardAvailableFilters> {
+        let allFilters: {
+            uuid: string;
+            filters: CompiledDimension[];
+        }[] = [];
+
+        allFilters = await Sentry.startSpan(
+            {
+                op: 'projectService.getAvailableFiltersForSavedQueries',
+                name: 'ProjectService.getAvailableFiltersForSavedQueries',
+            },
+            async () => {
+                const savedQueryUuids = savedChartUuidsAndTileUuids.map(
+                    ({ savedChartUuid }) => savedChartUuid,
+                );
+
+                const savedCharts =
+                    await this.savedChartModel.getInfoForAvailableFilters(
+                        savedQueryUuids,
+                    );
+                const uniqueSpaceUuids = [
+                    ...new Set(savedCharts.map((chart) => chart.spaceUuid)),
+                ];
+
+                if (savedCharts.length === 0) {
+                    return [];
+                }
+
+                const [spaceAccessMap, exploresMap, userSpacesAccess] =
+                    await Promise.all([
+                        this.spaceModel.getSpacesForAccessCheck(
+                            uniqueSpaceUuids,
+                        ),
+                        this.findExplores({
+                            user,
+                            projectUuid: savedCharts[0].projectUuid, // TODO: route should be updated to be project/dashboard specific. For now we pick it from first chart as they all should be from the same project
+                            exploreNames: savedCharts.map(
+                                (chart) => chart.tableName,
+                            ),
+                            organizationUuid: user.organizationUuid,
+                        }),
+                        this.spaceModel.getUserSpacesAccess(
+                            user.userUuid,
+                            uniqueSpaceUuids,
+                        ),
+                    ]);
+
+                return savedCharts.map((savedChart) => {
+                    const spaceAccess = spaceAccessMap.get(
+                        savedChart.spaceUuid,
+                    );
+
+                    if (
+                        user.ability.cannot(
+                            'view',
+                            subject('SavedChart', {
+                                ...savedChart,
+                                isPrivate: spaceAccess?.isPrivate,
+                                access:
+                                    userSpacesAccess[savedChart.spaceUuid] ??
+                                    [],
+                            }),
+                        )
+                    ) {
+                        return { uuid: savedChart.uuid, filters: [] };
+                    }
+
+                    const explore = exploresMap[savedChart.tableName];
+
+                    let filters: CompiledDimension[] = [];
+                    if (explore && !isExploreError(explore)) {
+                        filters = getDimensions(explore).filter(
+                            (field) =>
+                                isFilterableDimension(field) && !field.hidden,
+                        );
+                    }
+
+                    return { uuid: savedChart.uuid, filters };
+                });
+            },
+        );
 
         const allFilterableFields: FilterableDimension[] = [];
         const filterIndexMap: Record<string, number> = {};
@@ -3078,29 +3087,24 @@ export class ProjectService extends BaseService {
         }
 
         const spaces = await this.spaceModel.find({ projectUuid });
+        const spacesAccess = await this.spaceModel.getUserSpacesAccess(
+            user.userUuid,
+            spaces.map((s) => s.uuid),
+        );
 
-        const allowedSpacesBooleans = await Promise.all(
-            spaces.map(
-                async (space) =>
+        const allowedSpaceUuids = spaces
+            .filter(
+                (space) =>
                     space.projectUuid === projectUuid &&
                     hasViewAccessToSpace(
                         user,
                         space,
-                        await this.spaceModel.getUserSpaceAccess(
-                            user.userUuid,
-                            space.uuid,
-                        ),
+                        spacesAccess[space.uuid] ?? [],
                     ),
-            ),
-        );
+            )
+            .map(({ uuid }) => uuid);
 
-        const allowedSpaces = spaces.filter(
-            (_, index) => allowedSpacesBooleans[index],
-        );
-
-        return this.spaceModel.getSpaceQueries(
-            allowedSpaces.map((s) => s.uuid),
-        );
+        return this.spaceModel.getSpaceQueries(allowedSpaceUuids);
     }
 
     async getChartSummaries(
@@ -3120,29 +3124,26 @@ export class ProjectService extends BaseService {
         }
 
         const spaces = await this.spaceModel.find({ projectUuid });
+        const spacesAccess = await this.spaceModel.getUserSpacesAccess(
+            user.userUuid,
+            spaces.map((s) => s.uuid),
+        );
 
-        const allowedSpacesBooleans = await Promise.all(
-            spaces.map(
-                async (space) =>
+        const allowedSpaceUuids = spaces
+            .filter(
+                (space) =>
                     space.projectUuid === projectUuid &&
                     hasViewAccessToSpace(
                         user,
                         space,
-                        await this.spaceModel.getUserSpaceAccess(
-                            user.userUuid,
-                            space.uuid,
-                        ),
+                        spacesAccess[space.uuid] ?? [],
                     ),
-            ),
-        );
-
-        const allowedSpaces = spaces.filter(
-            (_, index) => allowedSpacesBooleans[index],
-        );
+            )
+            .map((space) => space.uuid);
 
         return this.savedChartModel.find({
             projectUuid,
-            spaceUuids: allowedSpaces.map((s) => s.uuid),
+            spaceUuids: allowedSpaceUuids,
         });
     }
 
@@ -3246,29 +3247,21 @@ export class ProjectService extends BaseService {
         }
 
         const spaces = await this.spaceModel.find({ projectUuid });
-
-        const spacesWithUserAccess = await Promise.all(
-            spaces.map(async (spaceSummary) => {
-                const [userAccess] = await this.spaceModel.getUserSpaceAccess(
-                    user.userUuid,
-                    spaceSummary.uuid,
-                );
-                return {
-                    ...spaceSummary,
-                    userAccess,
-                };
-            }),
+        const spacesAccess = await this.spaceModel.getUserSpacesAccess(
+            user.userUuid,
+            spaces.map((s) => s.uuid),
         );
 
-        const allowedSpaces = spacesWithUserAccess.filter((space) =>
-            hasViewAccessToSpace(
-                user,
-                space,
-                space.userAccess ? [space.userAccess] : [],
-            ),
-        );
+        const spacesWithUserAccess = spaces
+            .filter((space) =>
+                hasViewAccessToSpace(user, space, spacesAccess[space.uuid]),
+            )
+            .map((spaceSummary) => ({
+                ...spaceSummary,
+                userAccess: spacesAccess[spaceSummary.uuid]?.[0] ?? [],
+            }));
 
-        return allowedSpaces;
+        return spacesWithUserAccess;
     }
 
     async copyContentOnPreview(
@@ -3286,21 +3279,16 @@ export class ProjectService extends BaseService {
             },
             async () => {
                 const spaces = await this.spaceModel.find({ projectUuid }); // Get all spaces in the project
-                const allowedSpacesBooleans = await Promise.all(
-                    spaces.map(async (space) =>
-                        hasViewAccessToSpace(
-                            user,
-                            space,
-                            await this.spaceModel.getUserSpaceAccess(
-                                user.userUuid,
-                                space.uuid,
-                            ),
-                        ),
-                    ),
+                const spacesAccess = await this.spaceModel.getUserSpacesAccess(
+                    user.userUuid,
+                    spaces.map((s) => s.uuid),
                 );
-
-                const allowedSpaces = spaces.filter(
-                    (_, index) => allowedSpacesBooleans[index],
+                const allowedSpaces = spaces.filter((space) =>
+                    hasViewAccessToSpace(
+                        user,
+                        space,
+                        spacesAccess[space.uuid] ?? [],
+                    ),
                 );
 
                 await this.projectModel.duplicateContent(

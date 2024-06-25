@@ -1,5 +1,4 @@
 import { ParameterError, SshKeyPair, validateEmail } from '@lightdash/common';
-import { Attributes, Span, SpanStatusCode } from '@opentelemetry/api';
 import * as Sentry from '@sentry/node';
 import { CustomSamplingContext } from '@sentry/types';
 import { generateKeyPair } from 'crypto';
@@ -12,7 +11,6 @@ import {
     DBPinnedSpace,
 } from './database/entities/pinnedList';
 import Logger from './logging/logger';
-import { serverTracer } from './otel';
 
 export const sanitizeStringParam = (value: any) => {
     if (!value || typeof value !== 'string') {
@@ -44,82 +42,59 @@ export const isDbPinnedDashboard = (
 export const isDbPinnedSpace = (data: DbPinnedItem): data is DBPinnedSpace =>
     'space_uuid' in data && !!data.space_uuid;
 
-export const wrapOtelSpan = async <T>(
-    name: string,
-    attributes: Attributes,
-    f: (span: Span) => Promise<T>,
-): Promise<T> =>
-    serverTracer.startActiveSpan(name, async (span) => {
-        span.setAttributes(attributes);
-        try {
-            return await f(span);
-        } catch (error) {
-            span.recordException(error);
-            span.setStatus({ code: SpanStatusCode.ERROR });
-            throw error;
-        } finally {
-            span.end();
-        }
-    });
-
-export const wrapSentryTransaction = async <T>(
+export const wrapSentryTransaction = <T>(
     name: string,
     context: CustomSamplingContext,
-    funct: () => Promise<T>,
+    funct: (span: Sentry.Span) => Promise<T>,
 ): Promise<T> => {
     const startTime = Date.now();
-    const transaction = Sentry.getCurrentHub()?.getScope()?.getTransaction();
 
-    Logger.debug(
-        `Starting sentry transaction ${
-            transaction?.spanId
-        } "${name}" with context: ${JSON.stringify(context)}`,
-    );
-
-    const span =
-        transaction &&
-        transaction.startChild({
+    return Sentry.startSpanManual<Promise<T>>(
+        {
             op: name,
-            data: context,
-        });
-    try {
-        return await funct();
-    } catch (error) {
-        Logger.error(
-            `Error in wrapped sentry transaction ${transaction?.spanId} "${name}": ${error}`,
-        );
-        Sentry.captureException(error);
-        throw error;
-    } finally {
-        Logger.debug(
-            `End sentry transaction ${transaction?.spanId} "${name}", took: ${
-                Date.now() - startTime
-            }ms`,
-        );
-        if (span) span.finish();
-    }
+            name,
+            attributes: context,
+        },
+        async (span, end) => {
+            Logger.debug(
+                `Starting sentry transaction ${
+                    span?.spanContext().spanId
+                } "${name}" with context: ${JSON.stringify(context)}`,
+            );
+
+            try {
+                return await funct(span);
+            } catch (error) {
+                Logger.error(
+                    `Error in wrapped sentry transaction ${
+                        span?.spanContext().spanId
+                    } "${name}": ${error}`,
+                );
+                Sentry.captureException(error);
+                throw error;
+            } finally {
+                Logger.debug(
+                    `End sentry transaction ${
+                        span?.spanContext().spanId
+                    } "${name}", took: ${Date.now() - startTime}ms`,
+                );
+                end();
+            }
+        },
+    );
 };
 
 export function runWorkerThread<T>(worker: Worker): Promise<T> {
-    return wrapOtelSpan(
-        'Utils.runWorkerThread',
-        {},
-        async () =>
-            new Promise((resolve, reject) => {
-                worker.on('message', resolve);
-                worker.on('error', reject);
-                worker.on('exit', (code) => {
-                    if (code !== 0) {
-                        Logger.error(
-                            `Worker thread stopped with exit code ${code}`,
-                        );
-                        reject(
-                            new Error(`Worker stopped with exit code ${code}`),
-                        );
-                    }
-                });
-            }),
-    );
+    return new Promise((resolve, reject) => {
+        worker.on('message', resolve);
+        worker.on('error', reject);
+        worker.on('exit', (code) => {
+            if (code !== 0) {
+                Logger.error(`Worker thread stopped with exit code ${code}`);
+                reject(new Error(`Worker stopped with exit code ${code}`));
+            }
+        });
+    });
 }
 
 export const generateOpenSshKeyPair = async (): Promise<SshKeyPair> =>
